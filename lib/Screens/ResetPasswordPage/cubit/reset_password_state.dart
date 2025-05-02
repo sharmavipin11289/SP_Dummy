@@ -1,0 +1,15 @@
+// Define the states for the login feature.
+abstract class ResetPasswordState {}
+
+class ResetPasswordInitial extends ResetPasswordState {}
+
+class ResetPasswordLoading extends ResetPasswordState {}
+
+class ResetPasswordSuccess extends ResetPasswordState {}
+
+class ResetPasswordSendSuccess extends ResetPasswordState {}
+
+class ResetPasswordFailure extends ResetPasswordState {
+  final String error;
+  ResetPasswordFailure(this.error);
+}

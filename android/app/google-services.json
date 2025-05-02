@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "910968808052",
+    "project_id": "sanaa-4286a",
+    "storage_bucket": "sanaa-4286a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:910968808052:android:b6d235cc25d94245cce721",
+        "android_client_info": {
+          "package_name": "com.phppoets.sanaa"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "910968808052-d7cvfn4mt2c2h12pct0hdamarffmeghr.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBOBGMIFqJsX0OeFXrQhRdzJGn7yGuTVNU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "910968808052-d7cvfn4mt2c2h12pct0hdamarffmeghr.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
