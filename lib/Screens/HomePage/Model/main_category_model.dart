@@ -1,6 +1,9 @@
+import 'package:sanaa/CommonFiles/Model/meta_model.dart';
+
 class MainCategory {
   String? message;
   List<MainCategoryData>? data;
+  Meta? meta;
 
   MainCategory({this.message, this.data});
 
@@ -12,6 +15,7 @@ class MainCategory {
         data!.add(new MainCategoryData.fromJson(v));
       });
     }
+    meta = json['meta'] != null ? new Meta.fromJson(json['meta']) : null;
   }
 
   Map<String, dynamic> toJson() {
@@ -19,6 +23,9 @@ class MainCategory {
     data['message'] = this.message;
     if (this.data != null) {
       data['data'] = this.data!.map((v) => v.toJson()).toList();
+    }
+    if (this.meta != null) {
+      data['meta'] = this.meta!.toJson();
     }
     return data;
   }

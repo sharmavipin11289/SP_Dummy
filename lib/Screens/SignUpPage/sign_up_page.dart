@@ -1,15 +1,21 @@
+import 'dart:io';
+
 import 'package:country_picker/country_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sanaa/CommonFiles/image_file.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:sanaa/Screens/SignUpPage/Model/country_model.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../../CommonFiles/common_function.dart';
 import '../../CommonFiles/common_variables.dart';
 import '../../CommonFiles/text_style.dart';
 import '../../Navigation/navigation_service.dart';
+import '../../SharedPrefrence/shared_prefrence.dart';
+import '../../firebase_messaging/firebase_notification.dart';
 import '../LoginPage/auth_service.dart';
 import 'cubit/signup_cubit.dart';
 import 'cubit/signup_state.dart';
@@ -43,16 +49,19 @@ class _SignUpPageState extends State<SignUpPage> {
     User? user = await authService.signInWithGoogle();
     setState(() => _user = user);
     final idToken = await user?.getIdToken();
-    final param = {
-      "token": idToken,
-    };
+    final fbToken = await FirebaseNotifications().getToken();
+    final param = {"token": idToken, "device_token": fbToken};
+    print("fbt:: $fbToken");
+    print("t:: $idToken");
     context.read<SignupCubit>().googleSignIn(param: param);
   }
 
-  void _logout() async {
-    await AuthService().signOut();
-    setState(() => _user = null);
+  void _socialAppleLogin(Map<String,dynamic> param) async {
+    context.read<SignupCubit>().appleLogin(param: param);
   }
+
+
+
 
   void _showCountries(BuildContext context, List<CountryData> countries) {
     showModalBottomSheet(
@@ -99,6 +108,7 @@ class _SignUpPageState extends State<SignUpPage> {
     return BlocConsumer<SignupCubit, SignupState>(
       builder: (context, state) {
         return Scaffold(
+          resizeToAvoidBottomInset: false, // Prevent resizing when keyboard appears
           body: SafeArea(
             child: Stack(
               children: [
@@ -138,6 +148,7 @@ class _SignUpPageState extends State<SignUpPage> {
                                 ],
                               ),
                             ),
+
                             const SizedBox(height: 20),
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -186,18 +197,18 @@ class _SignUpPageState extends State<SignUpPage> {
                                   enabled: false,
                                   suffixIcon: (_shouldShowCountryLoader)
                                       ? const Padding(
-                                    padding: EdgeInsets.all(4.0),
-                                    child: CircularProgressIndicator(
-                                      color: Colors.grey,
-                                    ),
-                                  )
+                                          padding: EdgeInsets.all(4.0),
+                                          child: CircularProgressIndicator(
+                                            color: Colors.grey,
+                                          ),
+                                        )
                                       : const Icon(Icons.arrow_drop_down_sharp),
                                 ),
                               ),
                             ),
                             const SizedBox(height: 20),
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              padding: EdgeInsets.symmetric(horizontal: 20),
                               child: buildTextField(
                                 AppLocalizations.of(context)?.phoneNumber ?? "Phone Number",
                                 phone,
@@ -265,6 +276,10 @@ class _SignUpPageState extends State<SignUpPage> {
                                               fontWeight: FontWeight.w600,
                                               color: const Color(0xFF318531),
                                             ),
+                                            recognizer: TapGestureRecognizer()
+                                              ..onTap = () {
+                                                NavigationService.navigateTo('/webViewScreen', arguments: 'https://website-sanaa.arshantanu.in/terms-and-condition');
+                                              },
                                           ),
                                           TextSpan(
                                             text: AppLocalizations.of(context)?.and ?? " and ",
@@ -280,39 +295,16 @@ class _SignUpPageState extends State<SignUpPage> {
                                               fontWeight: FontWeight.w600,
                                               color: const Color(0xFF318531),
                                             ),
+                                            recognizer: TapGestureRecognizer()
+                                              ..onTap = () {
+                                                NavigationService.navigateTo('/webViewScreen', arguments: 'https://website-sanaa.arshantanu.in/privacy-policy');
+                                              },
                                           ),
                                         ],
                                       ),
                                     ),
                                   ),
                                 ],
-                              ),
-                            ),
-                            const SizedBox(height: 30),
-                            InkWell(
-                              onTap: () {
-                                _socialGoogleLogin();
-                              },
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 20),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(21),
-                                    border: Border.all(width: 1),
-                                  ),
-                                  height: 42,
-                                  width: 225,
-                                  padding: const EdgeInsets.symmetric(horizontal: 33, vertical: 9),
-                                  child: Row(
-                                    children: [
-                                      Text(
-                                        AppLocalizations.of(context)?.loginWithGoogle ?? 'Login with Google',
-                                        style: FontStyles.getStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                                      ),
-                                      const Icon(Icons.g_mobiledata),
-                                    ],
-                                  ),
-                                ),
                               ),
                             ),
                             const SizedBox(height: 30),
@@ -333,8 +325,11 @@ class _SignUpPageState extends State<SignUpPage> {
                                   context.read<SignupCubit>().signupUser(param: param);
                                 },
                                 style: ElevatedButton.styleFrom(
-                                  minimumSize: const Size(double.infinity, 50),
+                                  minimumSize: const Size(double.infinity, 50), // Same size as SignInWithAppleButton
                                   backgroundColor: Colors.black,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(22), // Same border radius
+                                  ),
                                 ),
                                 child: Text(
                                   AppLocalizations.of(context)?.continuee ?? "Continue",
@@ -347,6 +342,65 @@ class _SignUpPageState extends State<SignUpPage> {
                               ),
                             ),
                             const SizedBox(height: 10),
+                            InkWell(
+                              onTap: () {
+                                _socialGoogleLogin();
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 20),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(21),
+                                    border: Border.all(width: 1),
+                                  ),
+                                  height: 42,
+
+                                  padding: const EdgeInsets.symmetric(horizontal: 33, vertical: 9),
+                                  child: Row(
+                                    children: [
+                                      Spacer(),
+                                      Image.asset(google),
+                                       SizedBox(width: 8,),
+                                      Text(
+                                        AppLocalizations.of(context)?.loginWithGoogle ?? 'Login with Google',
+                                        style: FontStyles.getStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                                      ),
+                                      Spacer(),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            if(Platform.isIOS)
+                            const SizedBox(height: 10),
+                            if(Platform.isIOS)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 20),
+                                child: SizedBox(
+                                  height: 50, // Set consistent height
+                                  width: double.infinity, // Set consistent width
+                                  child: SignInWithAppleButton(
+                                    borderRadius: BorderRadius.circular(22),
+                                    onPressed: () async {
+                                      try {
+                                        final userCredential = await signInWithApple();
+                                        final idToken = await userCredential.user?.getIdToken();
+                                        final fbToken = await FirebaseNotifications().getToken();
+                                        print("FBToken:: $fbToken");
+                                        final param = {"token": idToken, "device_token": fbToken};
+                                        _socialAppleLogin(param);
+                                      } catch (e) {
+                                        print("Sign-in failed: $e");
+                                        // Show error message to user
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ),
+                            const SizedBox(
+                              height: 10,
+                            ),
+
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 20),
                               child: GestureDetector(
@@ -380,6 +434,8 @@ class _SignUpPageState extends State<SignUpPage> {
                               ),
                             ),
                             const SizedBox(height: 20),
+                            // Add padding to ensure content is not obscured by keyboard
+                            SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
                           ],
                         ),
                       ),
@@ -389,13 +445,13 @@ class _SignUpPageState extends State<SignUpPage> {
                   ],
                 ),
                 // Show the loader if the state is loading
-                if (state is SignupLoading || state is GoogleLoginLoading) loaderWidget(),
+                if (state is SignupLoading || state is GoogleLoginLoading || state is AppleLoginLoading) loaderWidget(),
               ],
             ),
           ),
         );
       },
-      listener: (context, state) {
+      listener: (context, state) async {
         if (state is SignupSuccess) {
           NavigationService.navigateTo(
             '/otpPage',
@@ -425,7 +481,14 @@ class _SignUpPageState extends State<SignUpPage> {
           showToast(state.error);
         } else if (state is GoogleLoginLoading) {
         } else if (state is GoogleLoginSuccess) {
+          await SharedPreferencesHelper.saveString('token', state.response.token ?? '');
+          NavigationService.navigateAndClearStack('/mainPage');
         } else if (state is GoogleLoginFailed) {
+          showToast(state.error);
+        }else if (state is AppleLoginSuccess) {
+          await SharedPreferencesHelper.saveString('token', state.response.token ?? '');
+          NavigationService.navigateAndClearStack('/mainPage');
+        } else if (state is AppleLoginFailed) {
           showToast(state.error);
         }
       },

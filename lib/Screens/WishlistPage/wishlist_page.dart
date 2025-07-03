@@ -117,12 +117,16 @@ class _WishListPageState extends State<WishListPage> {
                 ),
                 if(_products.length < 1)
                   Center(
-                    child: Text(
-                      AppLocalizations.of(context)?.noProductFoundInYourWishList ?? 'No product found in your wish list!!',
-                      style: FontStyles.getStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.grey.shade400
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8),
+                      child: Text(
+                        AppLocalizations.of(context)?.noProductFoundInYourWishList ?? 'No product found in your wishlist!!',
+                        textAlign: TextAlign.center,
+                        style: FontStyles.getStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.grey.shade400
+                        ),
                       ),
                     ),
                   ),

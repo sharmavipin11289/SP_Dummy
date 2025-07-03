@@ -10,6 +10,7 @@ import 'package:sanaa/Screens/MyCartPage/cubit/cart_cubit.dart';
 import 'package:sanaa/Screens/MyCartPage/cubit/cart_state.dart';
 import '../../CommonFiles/image_file.dart';
 import '../../CommonFiles/text_style.dart';
+import '../../SharedPrefrence/shared_prefrence.dart';
 import 'Model/cart_model.dart';
 
 class MyCartPage extends StatefulWidget {
@@ -24,6 +25,8 @@ class _MyCartPageState extends State<MyCartPage> {
   CartSummaryData? summaryData;
   TextEditingController _couponTxtController = TextEditingController();
   bool _isCouponApplied = false;
+  String appliedCoupon = '';
+
 
   @override
   void initState() {
@@ -39,14 +42,23 @@ class _MyCartPageState extends State<MyCartPage> {
     await _cartCubit.getCartProducts();
   }
 
+  _getSummary() async {
+    final param = {
+      "currency": SharedPreferencesHelper.getString('savedCurrency') ?? 'KES',
+      if(_isCouponApplied && appliedCoupon.isNotEmpty) "coupon": appliedCoupon,
+    };
+
+    _cartCubit.getOrderSummary(param);
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<CartCubit, CartState>(builder: (context, state) {
       return Scaffold(
         appBar: AppBar(
           backgroundColor: Colors.white,
-          leading: Padding(
-            padding: const EdgeInsets.all(8.0),
+          leading: const Padding(
+            padding: EdgeInsets.all(8.0),
             child: Text(''),
           ),
           title: Text(
@@ -92,7 +104,8 @@ class _MyCartPageState extends State<MyCartPage> {
 
                                       await context.read<CommonCubit>().checkoutInitiate();
                                       if(paymentData != null) {
-                                        NavigationService.navigateTo("/paymentScreen",arguments: (_isCouponApplied) ? _couponTxtController.text : '');
+                                        //NavigationService.navigateTo("/paymentScreen",arguments: (_isCouponApplied) ? _couponTxtController.text : '');
+                                        _getSummary();
                                       } else {
                                         showToast("Unable to initiate payment method. Please try later!");
                                       }
@@ -154,6 +167,8 @@ class _MyCartPageState extends State<MyCartPage> {
       } else if (state is CartSummarySuccess) {
         print("Succeess>>>>>>");
         summaryData = state.summaryData;
+        appliedCoupon = _couponTxtController.text;
+        _couponTxtController.text = '';
 
       } else if (state is CouponSuccess) {
         NavigationService.navigateTo(
@@ -161,12 +176,35 @@ class _MyCartPageState extends State<MyCartPage> {
           arguments: {'coupons': state.coupons,'selectedCode': summaryData?.coupon_code ?? ''},
         ).then((result) {
           print(result);
-          if (result != null) {
+          if(result is String && result == 'remove') {
+            _couponTxtController.text = '';
+            appliedCoupon = '';
+            _isCouponApplied = true;
+            _cartCubit.getCartSummary(_couponTxtController.text, _products.first.currency ?? '');
+          }else if (result != null) {
             _couponTxtController.text = result as String;
             _isCouponApplied = false;
           }
         });
       } else if (state is CartSummaryFailed) {
+
+        showToast(state.error);
+      } else if (state is OrderSummeryLoading) {
+        _showLoader = true;
+      } else if (state is OrderSummeryLoaded) {
+        if (state.summaryData != null) {
+          final args = {
+            'summaryData' : state.summaryData,
+            /*'paymentMethod': _selectedPaymentMethod?.option ?? '',*/
+            'shippingMethod': 'EXPRESS_SHIPPING',
+            /*'phone': (_selectedPaymentMethod?.requiresPhoneNumber?.toLowerCase() == 'yes') ? _phoneTxtCtrl.text : ''*/
+          };
+          print(">>>>>>>>>>");
+          print(args);
+          NavigationService.navigateTo("/orderSummery",arguments: args);
+        }
+      } else if (state is OrderSummeryFailed) {
+
         showToast(state.error);
       }
     });
@@ -462,7 +500,7 @@ class _MyCartPageState extends State<MyCartPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "${AppLocalizations.of(context)?.discount ?? 'Discount'} ${_couponTxtController.text.isNotEmpty ? '(${_couponTxtController.text} ${AppLocalizations.of(context)?.applied ?? 'Applied'})' : ''}",
+                    "${AppLocalizations.of(context)?.discount ?? 'Discount'} ${appliedCoupon.isNotEmpty ? '(${appliedCoupon} ${AppLocalizations.of(context)?.applied ?? 'Applied'})' : ''}",
                     style: FontStyles.getStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w400,

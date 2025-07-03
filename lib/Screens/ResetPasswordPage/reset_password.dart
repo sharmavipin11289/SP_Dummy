@@ -7,6 +7,7 @@ import 'package:sanaa/Screens/ResetPasswordPage/cubit/reset_password_state.dart'
 import '../../CommonFiles/common_function.dart';
 import '../../CommonFiles/image_file.dart';
 import '../../CommonFiles/text_style.dart';
+import '../../SharedPrefrence/shared_prefrence.dart';
 
 class ResetPasswordPage extends StatefulWidget {
   Map<String, dynamic> args;
@@ -37,14 +38,16 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<ResetPasswordCubit, ResetPasswordState>(
-      listener: (context, state) {
+      listener: (context, state)  async {
         if (state is ResetPasswordFailure) {
           showToast(state.error);
           _showLoader = false;
         } else if (state is ResetPasswordLoading) {
           _showLoader = true;
         } else if (state is ResetPasswordSuccess) {
-          NavigationService.navigateTo('/loginPage',arguments: false);
+          await SharedPreferencesHelper.remove('token');
+          await SharedPreferencesHelper.remove('user_detail');
+          NavigationService.navigateAndClearStack('/loginPage',arguments: false);
         }
       },
       builder: (context, state) {
@@ -124,7 +127,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                           buildTextField(
                             AppLocalizations.of(context)?.confirmPassword ?? 'Confirm Password',
                             _cnfrmPassword,
-                            isPassword: true,
+                            isPassword: _isSecureCnfrm,
                             suffixIcon: IconButton(
                               onPressed: () {
                                 setState(() {

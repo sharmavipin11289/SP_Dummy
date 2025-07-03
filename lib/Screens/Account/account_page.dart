@@ -90,7 +90,7 @@ class AccountPage extends StatelessWidget {
               Divider(),
               InkWell(
                 onTap: () {
-                  // NavigationService.navigateTo('/orderList');
+                   NavigationService.navigateTo('/webViewScreen',arguments: 'https://website-sanaa.arshantanu.in/contact-us');
                 },
                 child: Container(
                   height: 40,

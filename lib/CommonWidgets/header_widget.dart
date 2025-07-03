@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sanaa/CommonFiles/common_function.dart';
 import 'package:sanaa/CommonFiles/image_file.dart';
 import 'package:sanaa/Screens/Account/Model/user_detail_model.dart';
 import '../CommonFiles/text_style.dart';
@@ -6,9 +7,10 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class HeaderWidget extends StatefulWidget {
   GlobalKey<ScaffoldState> scaffoldKey;
+  Function onTapNotificationIcon;
   UserDetail? userDetail;
 
-  HeaderWidget({super.key, required this.scaffoldKey, this.userDetail});
+  HeaderWidget({super.key, required this.scaffoldKey, this.userDetail, required this.onTapNotificationIcon});
 
   @override
   State<HeaderWidget> createState() => _HeaderWidgetState();
@@ -37,7 +39,7 @@ class _HeaderWidgetState extends State<HeaderWidget> {
                 ),
             
                 Text(
-                  widget.userDetail?.name ?? 'Guest',
+                  (isUserLoggedIn()) ? widget.userDetail?.name ?? '' : 'Guest',
                   style: FontStyles.getStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
@@ -48,6 +50,11 @@ class _HeaderWidgetState extends State<HeaderWidget> {
               ],
             ),
           ),
+
+          InkWell(onTap:(){
+            widget.onTapNotificationIcon();
+          },child: Icon(Icons.notifications, size: 30,)),
+          SizedBox(width: 8,),
 
           GestureDetector(onTap: (){
             widget.scaffoldKey.currentState?.openEndDrawer();

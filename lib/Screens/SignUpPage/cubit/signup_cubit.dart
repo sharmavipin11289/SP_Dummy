@@ -12,6 +12,7 @@ class SignupCubit extends Cubit<SignupState> {
   final endPoint = 'auth/signup/request';
   final countriesEndpoint = 'locations/countries';
   final _googleLogin = "auth/google/signin";
+  final _appleLogin = "auth/apple/signin";
 
   // Method to handle user signup
   Future<void> signupUser({required Map<String,dynamic> param}) async {
@@ -105,6 +106,18 @@ class SignupCubit extends Cubit<SignupState> {
       emit(GoogleLoginSuccess(response: response));
     } catch (e) {
       emit(GoogleLoginFailed('$e'));
+    }
+  }
+
+  Future<void> appleLogin({required Map<String,dynamic> param}) async {
+    print(param);
+    emit(AppleLoginLoading()); // Emit loading state
+    try {
+      final response = await ApiService().request(endpoint: _appleLogin, method: 'post',body: param, fromJson: (json) => CommonResponse.fromJson(json));
+      print(response.message);
+      emit(AppleLoginSuccess(response: response));
+    } catch (e) {
+      emit(AppleLoginFailed('$e'));
     }
   }
 }

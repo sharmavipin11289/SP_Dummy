@@ -143,7 +143,7 @@ class _ProductCardState extends State<ProductCard> {
 
                       // Subtitle
                       Text(
-                        'by ' + (widget.product.businessName ?? ''),
+                        (AppLocalizations.of(context)?.by ?? 'by ') + (widget.product.businessName ?? ''),
                         style: FontStyles.getStyle(
                           fontSize: 8,
                           fontWeight: FontWeight.w400,

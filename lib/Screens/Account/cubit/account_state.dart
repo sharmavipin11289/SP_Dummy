@@ -1,6 +1,7 @@
 // Define the states for the login feature.
 import 'package:sanaa/CommonFiles/common_api_response.dart';
 import 'package:sanaa/Screens/Account/Model/currency_model.dart';
+import 'package:sanaa/Screens/Account/Model/language_model.dart';
 import 'package:sanaa/Screens/Account/Model/user_detail_model.dart';
 
 abstract class AccountState {}
@@ -23,8 +24,8 @@ class CurrencyGetFailed extends AccountState {
 //language loading
 class LanguageLoading extends AccountState{}
 class LanguageGetSuccess extends AccountState {
-  List<CurrencyData> currencies;
-  LanguageGetSuccess({required this.currencies});
+  List<LanguageData> languages;
+  LanguageGetSuccess({required this.languages});
 }
 class LanguageGetFailed extends AccountState {
   String error;

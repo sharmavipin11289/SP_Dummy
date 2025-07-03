@@ -6,11 +6,22 @@ import 'package:sanaa/Screens/HomePage/Model/offers_model.dart';
 import 'package:sanaa/Screens/HomePage/Model/shop_model.dart';
 import 'package:sanaa/Screens/HomePage/Model/testimonial_model.dart';
 
+import '../../../CommonFiles/Model/meta_model.dart';
 import '../../Account/Model/user_detail_model.dart';
+import '../Model/advertisment_model.dart';
 
 abstract class HomeState {}
 
 class HomeInitial extends HomeState {}
+
+//logout
+class LogoutLoading extends HomeState {}
+class LogoutSuccess extends HomeState {}
+class LogoutFailed extends HomeState {
+  final String error;
+  LogoutFailed(this.error);
+}
+
 
 //banner
 class HomeBannerLoading extends HomeState {}
@@ -28,7 +39,8 @@ class HomeBannerFailed extends HomeState {
 class MainCategoryLoading extends HomeState {}
 class MainCategorySuccess extends HomeState {
   List<MainCategoryData> categoryData;
-  MainCategorySuccess(this.categoryData);
+  Meta? meta;
+  MainCategorySuccess(this.categoryData, this.meta);
 }
 class MainCategoryFailed extends HomeState {
   final String error;
@@ -41,7 +53,8 @@ class MainCategoryFailed extends HomeState {
 class OffersLoading extends HomeState {}
 class OffersSuccess extends HomeState {
   List<OfferData> offerData;
-  OffersSuccess(this.offerData);
+  Meta? meta;
+  OffersSuccess(this.offerData, this.meta);
 }
 class OffersFailed extends HomeState {
   final String error;
@@ -92,11 +105,23 @@ class RecommendedProductFailed extends HomeState {
 
 
 
+class AdvertismentLoading extends HomeState {}
+class AdvertismentSuccess extends HomeState {
+  List<AdvertismentData> advertismentData;
+  AdvertismentSuccess(this.advertismentData);
+}
+class AdvertismentFailed extends HomeState {
+  final String error;
+  AdvertismentFailed(this.error);
+}
+
+
 //Testimonials
 class TestimonialsLoading extends HomeState {}
 class TestimonialsSuccess extends HomeState {
   List<Testimonial> testimonials;
-  TestimonialsSuccess(this.testimonials);
+  Meta? meta;
+  TestimonialsSuccess(this.testimonials, this.meta);
 }
 class TestimonialsFailed extends HomeState {
   final String error;

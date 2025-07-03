@@ -17,7 +17,11 @@ class LoginCubit extends Cubit<LoginState> {
       try {
         final response = await ApiService().request(endpoint: endPoint, method: 'post',body: param, fromJson: (json) => CommonResponse.fromJson(json));
         print(response.message);
-        emit(LoginSuccess());
+        if(response.extra != null) {
+          emit(LoginFailure('409',extra: response.extra));
+        }else {
+          emit(LoginSuccess());
+        }
       } catch (e) {
         emit(LoginFailure('$e'));
       }

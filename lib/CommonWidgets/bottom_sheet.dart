@@ -14,10 +14,7 @@ class SortBottomSheet extends StatefulWidget {
 }
 
 class _SortBottomSheetState extends State<SortBottomSheet> {
-  final List<String> _options = [
-    'Price: low to high',
-    'Price: high to low',
-  ];
+
   //price_low_to_high
   //price_high_to_low
 
@@ -98,6 +95,11 @@ class _SortBottomSheetState extends State<SortBottomSheet> {
   }
 
   List<Widget> _buildOptions(BuildContext context) {
+    final List<String> _options = [
+      AppLocalizations.of(context)?.priceLowToHigh ?? 'Price: low to high',
+    AppLocalizations.of(context)?.priceHighToLow ?? 'Price: high to low',
+    ];
+
     return List<Widget>.generate(
       _options.length,
       (index) {

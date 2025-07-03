@@ -67,4 +67,5 @@ class OTPCubit extends Cubit<OTPState> {
       emit(OTPFailure('$e'));
     }
   }
+
 }

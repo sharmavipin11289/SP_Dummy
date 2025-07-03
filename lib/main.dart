@@ -1,13 +1,17 @@
+import 'dart:io';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:sanaa/CommonFiles/common_function.dart';
 import 'package:sanaa/CommonFiles/cubit/common_cubit.dart';
 import 'package:sanaa/CommonFiles/image_file.dart';
 import 'package:sanaa/Provider/locale_provider.dart';
+import 'package:sanaa/Screens/Account/Model/language_model.dart';
 import 'package:sanaa/Screens/Account/cubit/account_cubit.dart';
 import 'package:sanaa/Screens/Account/profile_detail.dart';
 import 'package:sanaa/Screens/Account/profile_page.dart';
@@ -49,7 +53,11 @@ import 'package:sanaa/Screens/SignUpPage/cubit/signup_cubit.dart';
 import 'package:sanaa/Screens/SignUpPage/sign_up_page.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:sanaa/Screens/WishlistPage/cubit/wish_list_cubit.dart';
+import 'package:sanaa/Screens/notifications/cubit/notification_cubit.dart';
+import 'package:sanaa/Screens/notifications/notificaton_page.dart';
+import 'package:sanaa/firebase_messaging/firebase_notification.dart';
 import 'package:sanaa/splash_screen.dart';
+import 'package:sanaa/webview_screen.dart';
 
 import 'Navigation/navigation_service.dart';
 import 'Provider/internet_connectivity_provider.dart';
@@ -62,6 +70,7 @@ import 'Screens/ProductDetailPage/product_detail_page.dart';
 import 'Screens/RecommendedPage/recommended.dart';
 import 'Screens/ShopsPage/cubit/shops_cubit.dart';
 import 'Screens/Tabbar/tabbar.dart';
+import 'Screens/Tabbar/tabbar_notifier.dart';
 import 'SharedPrefrence/shared_prefrence.dart';
 import 'l10n/l10n.dart';
 
@@ -70,6 +79,7 @@ late NetworkStatusNotifier networkStatus;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  await FirebaseNotifications().initFCM();
   await SharedPreferencesHelper.init();
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -79,6 +89,7 @@ void main() async {
     providers: [
       ChangeNotifierProvider(create: (context) => LocalProvider()),
       ChangeNotifierProvider(create: (context) => NetworkStatusNotifier()),
+      ChangeNotifierProvider(create: (context) => TabControllerProvider()),
     ],
     child: FutureBuilder(
       future: Future.wait([
@@ -106,9 +117,33 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
+    Future.microtask(() async {
       if (mounted) {
         networkStatus = Provider.of<NetworkStatusNotifier>(context, listen: false);
+        if (!isUserLoggedIn()) {
+          clearAppCache();
+        }
+
+        // Retrieve the locale from SharedPreferences
+        final provider = Provider.of<LocalProvider>(context, listen: false);
+        final lan = SharedPreferencesHelper.getCustomObject('language', (json) => LanguageData.fromJson(json));
+        final storedLocale = lan?.locale ?? 'en';
+        if (storedLocale != null) {
+          // Set the locale if it exists in SharedPreferences
+          final locale = Locale(storedLocale);
+          if (L10n.all.contains(locale)) {
+            provider.setLocale(locale);
+          }
+        } else {
+          // Optional: Set a default locale if none is stored
+          // For example, use the device's locale or default to 'en'
+          final deviceLocale = WidgetsBinding.instance.window.locale;
+          final supportedLocale = L10n.all.firstWhere(
+            (locale) => locale.languageCode == deviceLocale.languageCode,
+            orElse: () => const Locale('en'),
+          );
+          provider.setLocale(supportedLocale);
+        }
       }
     });
   }
@@ -118,7 +153,7 @@ class _MyAppState extends State<MyApp> {
     final provider = Provider.of<LocalProvider>(context);
     return Builder(builder: (context) {
       return MediaQuery(
-        data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(1.0)),
+        data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
         child: MultiBlocProvider(
           providers: [
             BlocProvider<SignupCubit>(
@@ -171,6 +206,9 @@ class _MyAppState extends State<MyApp> {
             ),
             BlocProvider<PaymentPageCubit>(
               create: (context) => PaymentPageCubit(),
+            ),
+            BlocProvider<NotificationCubit>(
+              create: (context) => NotificationCubit(),
             ),
           ],
           child: MaterialApp(
@@ -250,7 +288,6 @@ class _MyAppState extends State<MyApp> {
               },
               '/excitingOffer': (context) {
                 final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
-
                 return ExcitingOfferPage(
                   title: args['title'] as String,
                   excitingOfferId: (args['offerId']) ?? '',
@@ -259,7 +296,10 @@ class _MyAppState extends State<MyApp> {
                   view: (args['view']) ?? '',
                 );
               },
-              '/filterPage': (context) => FilterScreen(),
+              '/filterPage': (context) {
+                final args = ModalRoute.of(context)?.settings.arguments as bool;
+                return FilterScreen(isFromCategory: args);
+              },
               '/internetConnection': (context) => NoInternetPage(),
               '/orderSummery': (context) {
                 final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
@@ -271,16 +311,19 @@ class _MyAppState extends State<MyApp> {
                   coupon: args,
                 );
               },
-              '/paymentDetail': (context) {
-                final orderData = ModalRoute.of(context)?.settings.arguments as PlaceOrderData;
-                return PaymentDetail(
-                  orderData: orderData,
-                );
+              '/webViewScreen': (context) {
+                final args = ModalRoute.of(context)?.settings.arguments as String;
+                return WebViewScreen(url: args);
               },
-              '/orderConfirmScreen': (context) => const OrderConfirmScreen()
+              '/orderConfirmScreen': (context) => const OrderConfirmScreen(),
+              '/notificationPage': (context) => const NotificationPage(),
             },
-            home: const Scaffold(
-              body: SafeArea(child: SizedBox.expand(child: SplashScreen())),
+            home: Scaffold(
+              body: SafeArea(
+                child: SizedBox.expand(
+                  child: (Platform.isIOS) ? const OnBoardPage() : const SplashScreen(),
+                ),
+              ),
             ),
           ),
         ),

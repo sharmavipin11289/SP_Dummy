@@ -4,14 +4,17 @@ import 'package:sanaa/Screens/ShopsPage/cubit/shops_state.dart';
 import 'package:sanaa/Screens/ShopsPage/model/shop_detail_model.dart';
 
 import '../../../ApiServices/api_service.dart';
+import '../../../CommonFiles/common_api_response.dart';
 import '../../../CommonFiles/common_variables.dart';
 import '../../HomePage/Model/shop_model.dart';
+import '../../ProductDetailPage/model/product_review_model.dart';
 
 class ShopsCubit extends Cubit<ShopsState> {
   ShopsCubit() : super(ShopInitial());
 
   final shopEndPoint = 'vendors';
   final _shopProducts = 'products?vendor_ids[0]=';
+  final _shopReview = 'reviews';
 
   Future<void> getShops() async {
     emit(ShopsLoading()); // Emit loading state
@@ -55,4 +58,28 @@ class ShopsCubit extends Cubit<ShopsState> {
     }
   }
 
+  Future<void> getShopReviews(String shopID) async {
+    emit(ShopReviewLoading()); // Emit loading state
+    try {
+      final response = await ApiService().request(endpoint: '${shopEndPoint}/${shopID}/${_shopReview}', method: 'get', fromJson: (json) => ProductReviewModel.fromJson(json));
+      if (response.data == null) {
+        emit(ShopReviewFailed(response.message ?? somethingWentWrong));
+      } else {
+        print('data inside>>>>>>>>>>>>>>>> ${response.data}');
+        emit(ShopReviewSuccess(response.data ?? []));
+      }
+    } catch (e) {
+      emit(ShopReviewFailed('$e'));
+    }
+  }
+
+  Future<void> submitProductReview(Map<String,dynamic> param, String shopID) async {
+    emit(SubmitReviewLoading());
+    try {
+      final response = await ApiService().request(endpoint: '${shopEndPoint}/${shopID}/${_shopReview}', method: 'post', body: param, fromJson: (json) => CommonResponse.fromJson(json));
+      emit(SubmitReviewSuccess());
+    } catch (e) {
+      emit(SubmitReviewFailed(e.toString()));
+    }
+  }
 }

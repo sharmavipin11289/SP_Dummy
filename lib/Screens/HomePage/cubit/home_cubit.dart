@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sanaa/ApiServices/api_service.dart';
 import 'package:sanaa/CommonFiles/Model/products_model.dart';
 import 'package:sanaa/CommonFiles/common_api_response.dart';
+import 'package:sanaa/Screens/HomePage/Model/advertisment_model.dart';
 import 'package:sanaa/Screens/HomePage/Model/banner_model.dart';
 import 'package:sanaa/Screens/HomePage/Model/offers_model.dart';
 import 'package:sanaa/Screens/HomePage/Model/shop_model.dart';
@@ -16,13 +17,28 @@ class HomeCubit extends Cubit<HomeState> {
   HomeCubit() : super(HomeInitial());
 
   final bannerEndPoint = 'banners';
-  final mainCategoryEndPoint = 'categories?type=MAIN_CATEGORIES';
+  final mainCategoryEndPoint = 'categories?';
   final offerEndPoint = 'offers';
   final shopEndPoint = 'vendors';
   final popularProduct = 'products?view=popular';
   final recommendedProduct = 'products?view=recommended';
   final _userDetail = 'profile';
   final _testimonialEndPoint = 'testimonials';
+  final _advertisment = 'advertisements?path=HOME';
+  final _logout = 'auth/signout';
+
+
+
+  logoutUser(Map<String,dynamic> param) async{
+    emit(LogoutLoading()); // Emit loading state
+    try {
+      final response = await ApiService().request(endpoint: _logout, method: 'post',body: param, fromJson: (json) => CommonResponse.fromJson(json));
+        emit(LogoutSuccess());
+    } catch (e) {
+        emit(LogoutFailed('$e'));
+    }
+  }
+
   //banners
   Future<void> getBanners() async {
     emit(HomeBannerLoading()); // Emit loading state
@@ -39,15 +55,15 @@ class HomeCubit extends Cubit<HomeState> {
   }
 
   // main categories
-  Future<void> getMainCategories() async {
+  Future<void> getMainCategories({int page = 1}) async {
     emit(MainCategoryLoading()); // Emit loading state
     try {
-      final response = await ApiService().request(endpoint: mainCategoryEndPoint, method: 'get', fromJson: (json) => MainCategory.fromJson(json));
+      final response = await ApiService().request(endpoint: mainCategoryEndPoint + 'page=$page' + '&type=MAIN_CATEGORIES', method: 'get', fromJson: (json) => MainCategory.fromJson(json));
       if (response.data == null) {
         emit(MainCategoryFailed(response.message ?? somethingWentWrong));
       } else {
         print('data inside>>>>>>>>>>>>>>>> ');
-        emit(MainCategorySuccess(response.data ?? []));
+        emit(MainCategorySuccess(response.data ?? [], response.meta));
       }
     } catch (e) {
       emit(MainCategoryFailed('$e'));
@@ -55,15 +71,15 @@ class HomeCubit extends Cubit<HomeState> {
   }
 
   // offers
-  Future<void> getOffers() async {
+  Future<void> getOffers({int page = 1}) async {
     emit(OffersLoading()); // Emit loading state
     try {
-      final response = await ApiService().request(endpoint: offerEndPoint, method: 'get', fromJson: (json) => OffersModel.fromJson(json));
+      final response = await ApiService().request(endpoint: offerEndPoint + '?page=$page', method: 'get', fromJson: (json) => OffersModel.fromJson(json));
       if (response.data == null) {
         emit(OffersFailed(response.message ?? somethingWentWrong));
       } else {
         print('data inside>>>>>>>>>>>>>>>> ');
-        emit(OffersSuccess(response.data ?? []));
+        emit(OffersSuccess(response.data ?? [], response.meta));
       }
     } catch (e) {
       emit(OffersFailed('$e'));
@@ -87,15 +103,15 @@ class HomeCubit extends Cubit<HomeState> {
   }
 
   //testimonial
-  Future<void> getTestimonials() async {
+  Future<void> getTestimonials({int page = 1}) async {
     emit(TestimonialsLoading()); // Emit loading state
     try {
-      final response = await ApiService().request(endpoint: _testimonialEndPoint, method: 'get', fromJson: (json) => TestimonialModal.fromJson(json));
+      final response = await ApiService().request(endpoint: _testimonialEndPoint + '?page=$page', method: 'get', fromJson: (json) => TestimonialModal.fromJson(json));
       if (response.data == null) {
         emit(TestimonialsFailed(response.message ?? somethingWentWrong));
       } else {
         print('data inside>>>>>>>>>>>>>>>> ');
-        emit(TestimonialsSuccess(response.data ?? []));
+        emit(TestimonialsSuccess(response.data ?? [], response.meta));
       }
     } catch (e) {
       emit(TestimonialsFailed('$e'));
@@ -131,6 +147,21 @@ class HomeCubit extends Cubit<HomeState> {
       emit(RecommendedProductFailed('$e'));
     }
   }
+
+
+  //advertisment
+  Future<void> getAdvertismentData() async {
+    emit(AdvertismentLoading()); // Emit loading state
+    try {
+      final response = await ApiService().request(endpoint: _advertisment, method: 'get', fromJson: (json) => AdvertismentModel.fromJson(json));
+      print('data inside>>>>>>>>>>>>>>>> ${response.data}');
+      emit(AdvertismentSuccess(response.data ?? []));
+
+    } catch (e) {
+      emit(AdvertismentFailed('$e'));
+    }
+  }
+
 
   Future<void> getUserDetails() async{
     try {

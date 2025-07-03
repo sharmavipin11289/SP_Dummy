@@ -10,6 +10,9 @@ import FirebaseCore
   ) -> Bool {
       FirebaseApp.configure()
     GeneratedPluginRegistrant.register(with: self)
+
+      UNUserNotificationCenter.current().delegate = self as? UNUserNotificationCenterDelegate
+
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 }

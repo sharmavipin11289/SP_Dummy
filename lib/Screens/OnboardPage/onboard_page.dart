@@ -28,6 +28,8 @@ class _OnBoardPageState extends State<OnBoardPage> {
   _checkForAutoLogin() async {
     if(isUserLoggedIn()) {
       NavigationService.navigateAndClearStack('/mainPage');
+    }else{
+      await clearAppCache();
     }
   }
 
@@ -145,7 +147,7 @@ class _OnBoardPageState extends State<OnBoardPage> {
                         NavigationService.navigateTo('/mainPage');
                       },
                       child: Text(
-                        "Skip",
+                        AppLocalizations.of(context)?.skip ?? "Skip",
                         style: FontStyles.getStyle(
                           fontSize: 19,
                           fontWeight: FontWeight.w600,

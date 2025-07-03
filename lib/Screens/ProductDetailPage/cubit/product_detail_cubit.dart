@@ -7,6 +7,7 @@ import '../../../ApiServices/api_service.dart';
 import '../../../CommonFiles/Model/products_model.dart';
 import '../../../CommonFiles/common_function.dart';
 import '../../../CommonFiles/common_variables.dart';
+import '../../PaymentPage/model/checkout_summary_model.dart';
 import '../model/product_review_model.dart';
 
 class ProductDetailCubit extends Cubit<ProductDetailState> {
@@ -15,6 +16,7 @@ class ProductDetailCubit extends Cubit<ProductDetailState> {
  final _productDetail = 'products/' ;
  final _productReview = 'product-reviews';
  final _relatedProdouct = 'products';
+  final _endPoint = 'checkout/summary';
 
 
 
@@ -45,13 +47,13 @@ class ProductDetailCubit extends Cubit<ProductDetailState> {
     }
   }
 
-  Future<void> getProductReview(String productID) async {
+  Future<void> getProductReview(String productID, {int page = 1}) async {
     emit(ProductDetailLoading()); // Emit loading state
     try {
-      final response = await ApiService().request(endpoint: _productReview + "?" + productID, method: 'get', fromJson: (json) => ProductReviewModel.fromJson(json));
+      final response = await ApiService().request(endpoint: _productReview + "?product_id=" + productID + '&page=$page', method: 'get', fromJson: (json) => ProductReviewModel.fromJson(json));
       print("REEEEEE");
       print(response);
-      emit(ProductReviewSuccess(response.data ?? []));
+      emit(ProductReviewSuccess(response.data ?? [], response.meta));
     } catch (e) {
       emit(ProductDetailFailed('$e'));
     }
@@ -64,6 +66,22 @@ class ProductDetailCubit extends Cubit<ProductDetailState> {
         emit(SubmitReviewSuccess());
      } catch (e) {
       emit(SubmitReviewLoading());
+    }
+  }
+
+  Future<void> getOrderSummary(Map<String, dynamic> param) async {
+    emit(OrderSummeryLoading());
+    try {
+      final response = await ApiService().request(endpoint: convertToUrlParams(_endPoint, param), method: 'get', fromJson: (json) => CheckoutSummaryModel.fromJson(json));
+      print(response.message);
+      if(response.data != null) {
+        emit(OrderSummeryLoaded(summaryData: response.data));
+      }
+      else {
+        emit(OrderSummeryFailed(error: '${response.message}'));
+      }
+    } catch (e) {
+      emit(OrderSummeryFailed(error: '${e.toString()}'));
     }
   }
 }

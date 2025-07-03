@@ -14,7 +14,9 @@ import '../../CommonFiles/text_style.dart';
 import '../../SharedPrefrence/shared_prefrence.dart';
 
 class FilterScreen extends StatefulWidget {
-  const FilterScreen({Key? key}) : super(key: key);
+  bool isFromCategory;
+
+  FilterScreen({Key? key, required this.isFromCategory}) : super(key: key);
 
   @override
   State<FilterScreen> createState() => _FilterScreenState();
@@ -41,12 +43,7 @@ class _FilterScreenState extends State<FilterScreen> {
   List<CategooryTreeData> categoriesData = [];
   late FilterCubit _cubit;
 
-  final List<String> options = [
-    'Categories',
-    'Price Range',
-    'Our Vendors',
-    'Exciting Offer',
-  ];
+  List<String> options = [];
 
   List<ShopData> vendors = [];
   List<OfferData> offers = [];
@@ -54,12 +51,23 @@ class _FilterScreenState extends State<FilterScreen> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-
     _debouncer = Debouncer(duration: Duration(seconds: 2));
     _cubit = BlocProvider.of<FilterCubit>(context);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final locale = AppLocalizations.of(context);
+      setState(() {
+        options = [
+          locale?.categories ?? 'Categories',
+          locale?.priceRange ?? 'Price Range',
+          locale?.ourVendor ?? 'Our Vendors',
+          locale?.excitingOffer ?? 'Exciting Offer',
+        ];
+        if (widget.isFromCategory) {
+          _selectedOption = 1;
+          expandedCategory = locale?.priceRange ?? 'Price Range';
+        }
+      });
       _getCategoories();
       _getVendors();
       _getExcitingOffer();
@@ -79,10 +87,8 @@ class _FilterScreenState extends State<FilterScreen> {
   }
 
   Map<String, dynamic> _convertFilterToParam() {
-    // Convert to key-value pairs
     Map<String, dynamic> param = {};
     for (int i = 0; i < selectedSubCategoryItems.length; i++) {
-      // Add key-value pair where key is category[i] and value is "flutter"
       param['category_ids[$i]'] = selectedSubCategoryItems[i].id ?? '';
     }
     for (int i = 0; i < selectedVendors.length; i++) {
@@ -105,10 +111,11 @@ class _FilterScreenState extends State<FilterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final locale = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          AppLocalizations.of(context)?.filterBy ?? 'Filter by',
+          locale?.filterBy ?? 'Filter by',
           style: FontStyles.getStyle(
             fontSize: 20,
             fontWeight: FontWeight.w600,
@@ -125,15 +132,22 @@ class _FilterScreenState extends State<FilterScreen> {
                 selectedSubCategoryItems.clear();
                 isViewingSubCategoryItems = false;
                 _minPrice = 0;
-                _maxPrice = 1000;
+                _maxPrice = 99999;
                 _currentMinPrice = 0;
-                _currentMaxPrice = 1000;
+                _currentMaxPrice = 99999;
                 selectedOffer = null;
                 selectedVendors.clear();
+                minPriceTextEditingController.text = '';
+                maxPriceTextEditingController.text = '';
+                _selectedOption = 0;
+                if (widget.isFromCategory) {
+                  _selectedOption = 1;
+                  expandedCategory = locale?.priceRange ?? 'Price Range';
+                }
               });
             },
             child: Text(
-              AppLocalizations.of(context)?.reset ?? 'Reset',
+              locale?.reset ?? 'Reset',
               style: FontStyles.getStyle(fontSize: 14, fontWeight: FontWeight.w400, color: Colors.red),
             ),
           ),
@@ -142,14 +156,13 @@ class _FilterScreenState extends State<FilterScreen> {
       body: BlocConsumer<FilterCubit, FilterState>(builder: (context, state) {
         return Row(
           children: [
-            // Left Panel (Static Menu)
             Expanded(
               flex: 1,
               child: Container(
                 color: Colors.grey.shade100,
                 child: ListView(
                   children: [
-                    for (var i = 0; i < options.length; i++)
+                    for (var i = (widget.isFromCategory) ? 1 : 0; i < options.length; i++)
                       Container(
                         color: (_selectedOption == i ? Colors.white : Colors.transparent),
                         child: _buildFilterOption(options[i], i),
@@ -158,11 +171,9 @@ class _FilterScreenState extends State<FilterScreen> {
                 ),
               ),
             ),
-
-            // Right Panel (Dynamic Content)
             Expanded(
               flex: 2,
-              child: _buildRightPanel(),
+              child: _buildRightPanel(locale),
             ),
           ],
         );
@@ -189,7 +200,7 @@ class _FilterScreenState extends State<FilterScreen> {
                     backgroundColor: Colors.white,
                   ),
                   child: Text(
-                    AppLocalizations.of(context)?.close ?? 'Close',
+                    locale?.close ?? 'Close',
                     style: FontStyles.getStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -209,7 +220,7 @@ class _FilterScreenState extends State<FilterScreen> {
                     backgroundColor: Colors.black,
                   ),
                   child: Text(
-                    '${AppLocalizations.of(context)?.apply ?? 'Apply'} (${_getSelectionCount()})',
+                    '${locale?.apply ?? 'Apply'} (${_getSelectionCount()})',
                     style: FontStyles.getStyle(fontSize: 16, fontWeight: FontWeight.w400, color: Colors.white),
                   ),
                 ),
@@ -222,34 +233,35 @@ class _FilterScreenState extends State<FilterScreen> {
   }
 
   Widget _buildFilterOption(String label, int i) {
+    final locale = AppLocalizations.of(context);
     return ListTile(
       title: Text(label),
       onTap: () {
         _selectedOption = i;
         setState(() {
-          if (label == 'Categories') {
+          if (label == (locale?.categories ?? 'Categories')) {
             expandedCategory = null;
             selectedSubCategory = null;
             isViewingSubCategoryItems = false;
-          } else if (label == 'Price Range') {
-            expandedCategory = 'Price Range'; // Show price range right panel
-          } else if (label == 'Our Vendors') {
-            expandedCategory = 'Our Vendors'; // Show vendors right panel
-          } else if (label == 'Exciting Offer') {
-            expandedCategory = 'Exciting Offer'; // Show discount right panel
+          } else if (label == (locale?.priceRange ?? 'Price Range')) {
+            expandedCategory = locale?.priceRange ?? 'Price Range';
+          } else if (label == (locale?.ourVendor ?? 'Our Vendors')) {
+            expandedCategory = locale?.ourVendor ?? 'Our Vendors';
+          } else if (label == (locale?.excitingOffer ?? 'Exciting Offer')) {
+            expandedCategory = locale?.excitingOffer ?? 'Exciting Offer';
           }
         });
       },
     );
   }
 
-  Widget _buildRightPanel() {
-    if (expandedCategory == 'Price Range') {
-      return _buildPriceRangePanel();
-    } else if (expandedCategory == 'Our Vendors') {
-      return _buildVendorsPanel();
-    } else if (expandedCategory == 'Exciting Offer') {
-      return _buildOfferPanel();
+  Widget _buildRightPanel(AppLocalizations? locale) {
+    if (expandedCategory == (locale?.priceRange ?? 'Price Range')) {
+      return _buildPriceRangePanel(locale);
+    } else if (expandedCategory == (locale?.ourVendor ?? 'Our Vendors')) {
+      return _buildVendorsPanel(locale);
+    } else if (expandedCategory == (locale?.excitingOffer ?? 'Exciting Offer')) {
+      return _buildOfferPanel(locale);
     }
 
     if (isViewingSubCategoryItems && selectedSubCategory != null) {
@@ -268,19 +280,19 @@ class _FilterScreenState extends State<FilterScreen> {
             child: ListView(
               children: (selectedSubCategory?.productCategories ?? [])
                   .map((item) => CheckboxListTile(
-                        activeColor: Colors.green,
-                        title: Text(item.name ?? ''),
-                        value: selectedSubCategoryItems.contains(item),
-                        onChanged: (bool? selected) {
-                          setState(() {
-                            if (selected == true) {
-                              selectedSubCategoryItems.add(item);
-                            } else {
-                              selectedSubCategoryItems.remove(item);
-                            }
-                          });
-                        },
-                      ))
+                activeColor: Colors.green,
+                title: Text(item.name ?? ''),
+                value: selectedSubCategoryItems.contains(item),
+                onChanged: (bool? selected) {
+                  setState(() {
+                    if (selected == true) {
+                      selectedSubCategoryItems.add(item);
+                    } else {
+                      selectedSubCategoryItems.remove(item);
+                    }
+                  });
+                },
+              ))
                   .toList(),
             ),
           ),
@@ -288,61 +300,60 @@ class _FilterScreenState extends State<FilterScreen> {
       );
     }
 
-    // Show Main Categories and Subcategories
     return ListView(
       children: categoriesData.map((category) {
-            final bool isExpanded = expandedCategory == category.name;
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ListTile(
-                  title: Text(category.name!),
-                  trailing: category.subcategories != null
-                      ? Icon(
-                          isExpanded ? Icons.expand_less : Icons.expand_more,
-                          size: 20,
-                        )
-                      : null,
-                  onTap: () {
-                    setState(() {
-                      expandedCategory = isExpanded ? null : category.name;
-                    });
-                  },
-                ),
-                if (isExpanded && category.subcategories != null)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 16),
-                    child: Column(
-                      children: category.subcategories!
-                          .map(
-                            (subCategory) => RadioListTile<TreeSubcategories>(
-                              activeColor: Colors.green,
-                              title: Text(subCategory.name!),
-                              value: subCategory,
-                              groupValue: selectedSubCategory,
-                              onChanged: (value) {
-                                setState(() {
-                                  selectedSubCategory = value;
-                                  isViewingSubCategoryItems = true;
-                                });
-                              },
-                            ),
-                          )
-                          .toList(),
+        final bool isExpanded = expandedCategory == category.name;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ListTile(
+              title: Text(category.name!),
+              trailing: category.subcategories != null
+                  ? Icon(
+                isExpanded ? Icons.expand_less : Icons.expand_more,
+                size: 20,
+              )
+                  : null,
+              onTap: () {
+                setState(() {
+                  expandedCategory = isExpanded ? null : category.name;
+                });
+              },
+            ),
+            if (isExpanded && category.subcategories != null)
+              Padding(
+                padding: const EdgeInsets.only(left: 16),
+                child: Column(
+                  children: category.subcategories!
+                      .map(
+                        (subCategory) => RadioListTile<TreeSubcategories>(
+                      activeColor: Colors.green,
+                      title: Text(subCategory.name!),
+                      value: subCategory,
+                      groupValue: selectedSubCategory,
+                      onChanged: (value) {
+                        setState(() {
+                          selectedSubCategory = value;
+                          isViewingSubCategoryItems = true;
+                        });
+                      },
                     ),
-                  ),
-              ],
-            );
-          }).toList() ??
+                  )
+                      .toList(),
+                ),
+              ),
+          ],
+        );
+      }).toList() ??
           [],
     );
   }
 
-  Widget _buildPriceRangePanel() {
+  Widget _buildPriceRangePanel(AppLocalizations? locale) {
     return Column(
       children: [
         _buildHeader(
-          title: 'Price Range',
+          title: locale?.priceRange ?? 'Price Range',
           onBackPressed: () {
             setState(() {
               expandedCategory = null;
@@ -356,23 +367,23 @@ class _FilterScreenState extends State<FilterScreen> {
             children: [
               SizedBox(
                 width: 120,
-                child: buildTextField('Min Price', minPriceTextEditingController, onChange: (value) {
+                child: buildTextField(locale?.minPrice ?? 'Min Price', minPriceTextEditingController, onChange: (value) {
                   if (value.isNotEmpty) {
                     final minValue = double.tryParse(value) ?? 0.0;
-                   if(minValue > 99999) {
-                     setState(() {
-                       minPriceTextEditingController.text = '$_currentMinPrice';
-                     });
-                   }else {
-                     _currentMinPrice = minValue;
-                   }
+                    if (minValue > 99999) {
+                      setState(() {
+                        minPriceTextEditingController.text = '$_currentMinPrice';
+                      });
+                    } else {
+                      _currentMinPrice = minValue;
+                    }
                   }
                 }),
               ),
               SizedBox(
                 width: 120,
                 child: buildTextField(
-                  'Max Price',
+                  locale?.maxPrice ?? 'Max Price',
                   maxPriceTextEditingController,
                   onChange: (value) {
                     if (value.isNotEmpty) {
@@ -392,7 +403,6 @@ class _FilterScreenState extends State<FilterScreen> {
                                 TextPosition(offset: maxPriceTextEditingController.text.length),
                               );
                             });
-
                           } else {
                             _currentMaxPrice = maxValue;
                           }
@@ -425,17 +435,17 @@ class _FilterScreenState extends State<FilterScreen> {
           },
         ),
         Text(
-          'Price: ${SharedPreferencesHelper.getString('savedCurrency') ?? 'KES'} ${_currentMinPrice.toStringAsFixed(0)} - ${SharedPreferencesHelper.getString('savedCurrency') ?? 'KES'} ${_currentMaxPrice.toStringAsFixed(0)}',
+          '${locale?.price ?? 'Price'} ${SharedPreferencesHelper.getString('savedCurrency') ?? 'KES'} ${_currentMinPrice.toStringAsFixed(0)} - ${SharedPreferencesHelper.getString('savedCurrency') ?? 'KES'} ${_currentMaxPrice.toStringAsFixed(0)}',
         ),
       ],
     );
   }
 
-  Widget _buildVendorsPanel() {
+  Widget _buildVendorsPanel(AppLocalizations? locale) {
     return Column(
       children: [
         _buildHeader(
-          title: 'Vendors',
+          title: locale?.ourVendor ?? 'Our Vendors',
           onBackPressed: () {
             setState(() {
               expandedCategory = null;
@@ -445,45 +455,47 @@ class _FilterScreenState extends State<FilterScreen> {
         Column(
           children: vendors
               .map((vendor) => CheckboxListTile(
-                    activeColor: Colors.green,
-                    value: selectedVendors.contains(vendor),
-                    title: Text(
-                      vendor.businessName ?? '',
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    onChanged: (value) {
-                      setState(() {
-                        print(vendor.id);
-                        print(vendor.name);
-                        if (value == true) {
-                          selectedVendors.add(vendor);
-                        } else {
-                          selectedVendors.remove(vendor);
-                        }
-                      });
-                    },
-                  ))
+            activeColor: Colors.green,
+            value: selectedVendors.contains(vendor),
+            title: Text(
+              vendor.businessName ?? '',
+              overflow: TextOverflow.ellipsis,
+            ),
+            onChanged: (value) {
+              setState(() {
+                print(vendor.id);
+                print(vendor.name);
+                if (value == true) {
+                  selectedVendors.add(vendor);
+                } else {
+                  selectedVendors.remove(vendor);
+                }
+              });
+            },
+          ))
               .toList(),
         ),
       ],
     );
   }
 
-  Widget _buildOfferPanel() {
+  Widget _buildOfferPanel(AppLocalizations? locale) {
     return Column(
       children: [
         _buildHeader(
-          title: 'Exciting Offer',
+          title: locale?.excitingOffer ?? 'Exciting Offer',
           onBackPressed: () {
             setState(() {
               expandedCategory = null;
             });
           },
         ),
-        Column(
-          children: offers
-              .map(
-                (offer) => RadioListTile<OfferData>(
+        Expanded(
+          child: SingleChildScrollView(
+            child: Column(
+              children: offers
+                  .map(
+                    (offer) => RadioListTile<OfferData>(
                   activeColor: Colors.green,
                   title: Text(offer.title ?? ''),
                   value: offer,
@@ -495,7 +507,9 @@ class _FilterScreenState extends State<FilterScreen> {
                   },
                 ),
               )
-              .toList(),
+                  .toList(),
+            ),
+          ),
         ),
       ],
     );
@@ -535,8 +549,6 @@ class _FilterScreenState extends State<FilterScreen> {
     return total;
   }
 }
-
-
 
 class Debouncer {
   final Duration duration;

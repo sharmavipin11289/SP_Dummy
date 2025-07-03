@@ -1,7 +1,9 @@
 import 'package:sanaa/Screens/ProductDetailPage/model/product_detail_model.dart';
 import 'package:sanaa/Screens/ProductDetailPage/model/product_review_model.dart';
 
+import '../../../CommonFiles/Model/meta_model.dart';
 import '../../../CommonFiles/Model/products_model.dart';
+import '../../PaymentPage/model/checkout_summary_model.dart';
 
 abstract class ProductDetailState {}
 
@@ -16,7 +18,8 @@ class ProductDetailSuccess extends ProductDetailState {
 
 class ProductReviewSuccess extends ProductDetailState {
   List<ProductReview> productReviews;
-  ProductReviewSuccess(this.productReviews);
+  Meta? meta;
+  ProductReviewSuccess(this.productReviews, this.meta);
 }
 
 class ProductDetailFailed extends ProductDetailState {
@@ -42,3 +45,17 @@ class SubmitReviewFailed extends ProductDetailState {
   final String error;
   SubmitReviewFailed(this.error);
 }
+
+
+class OrderSummeryLoading extends ProductDetailState {}
+
+class OrderSummeryLoaded extends ProductDetailState {
+  CheckoutSummaryData? summaryData;
+  OrderSummeryLoaded({this.summaryData});
+}
+
+class OrderSummeryFailed extends ProductDetailState {
+  String error;
+  OrderSummeryFailed({required this.error});
+}
+

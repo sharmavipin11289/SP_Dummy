@@ -7,6 +7,8 @@ import 'package:sanaa/Screens/MyCartPage/Model/coupon_model.dart';
 
 
 import '../../../CommonFiles/common_api_response.dart';
+import '../../../CommonFiles/common_function.dart';
+import '../../PaymentPage/model/checkout_summary_model.dart';
 import 'cart_state.dart';
 
 
@@ -18,6 +20,7 @@ class CartCubit extends Cubit<CartState> {
   final _deleteCartEndPoint = 'cart/';
   final _cartSummary = 'cart/summary?';
   final _coupons = 'coupons?limit=all';
+  final _endPoint = 'checkout/summary';
 
   //get cart
   Future<void> getCartProducts() async {
@@ -88,6 +91,18 @@ class CartCubit extends Cubit<CartState> {
     } catch (e) {
       print(e);
       emit(CouponFailed(error: '$e'));
+    }
+  }
+
+
+  Future<void> getOrderSummary(Map<String, dynamic> param) async {
+    emit(OrderSummeryLoading());
+    try {
+      final response = await ApiService().request(endpoint: convertToUrlParams(_endPoint, param), method: 'get', fromJson: (json) => CheckoutSummaryModel.fromJson(json));
+      print(response.message);
+      emit(OrderSummeryLoaded(summaryData: response.data));
+    } catch (e) {
+      emit(OrderSummeryFailed(error: '${e.toString()}'));
     }
   }
 

@@ -32,6 +32,7 @@ class _LoginPageState extends State<LoginPage> {
     return BlocConsumer<LoginCubit, LoginState>(
       builder: (context, state) {
         return Scaffold(
+          resizeToAvoidBottomInset: false, // Prevent resizing when keyboard appears
           body: SafeArea(
             child: Stack(
               children: [
@@ -41,6 +42,7 @@ class _LoginPageState extends State<LoginPage> {
                     Expanded(
                       child: SingleChildScrollView(
                         child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Stack(
                               children: [
@@ -58,27 +60,28 @@ class _LoginPageState extends State<LoginPage> {
                                     ),
                                   ),
                                 ),
-                                GestureDetector(
-                                  onTap: () {
-                                    NavigationService.goBack();
-                                  },
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(18),
-                                      child: Container(
-                                        color: Colors.black,
-                                        width: 36,
-                                        height: 36,
-                                        child: const Icon(
-                                          Icons.arrow_back,
-                                          color: Colors.white,
-                                          size: 19,
+                                if (widget.isFromOnBoard)
+                                  GestureDetector(
+                                    onTap: () {
+                                      NavigationService.goBack();
+                                    },
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(18),
+                                        child: Container(
+                                          color: Colors.black,
+                                          width: 36,
+                                          height: 36,
+                                          child: const Icon(
+                                            Icons.arrow_back,
+                                            color: Colors.white,
+                                            size: 19,
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ),
-                                ),
                               ],
                             ),
                             Padding(
@@ -96,7 +99,8 @@ class _LoginPageState extends State<LoginPage> {
                                   ),
                                   const SizedBox(height: 10),
                                   Text(
-                                    AppLocalizations.of(context)?.exploreKenyan ?? 'Explore Kenyan Culture:\nShop Authentic Treasures with Purpose',
+                                    AppLocalizations.of(context)?.exploreKenyan ??
+                                        'Explore Kenyan Culture:\nShop Authentic Treasures with Purpose',
                                     textAlign: TextAlign.center,
                                     style: FontStyles.getStyle(
                                       fontSize: 14,
@@ -166,11 +170,11 @@ class _LoginPageState extends State<LoginPage> {
                                   const SizedBox(height: 20),
                                   GestureDetector(
                                     onTap: () {
-                                      if (widget.isFromOnBoard) {
+                                      //if (widget.isFromOnBoard) {
                                         NavigationService.navigateTo('/signUp', arguments: false);
-                                      } else {
+                                      /*} else {
                                         NavigationService.goBack();
-                                      }
+                                      }*/
                                     },
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
@@ -194,6 +198,8 @@ class _LoginPageState extends State<LoginPage> {
                                     ),
                                   ),
                                   const SizedBox(height: 20),
+                                  // Add padding to ensure content is not obscured by keyboard
+                                  SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
                                 ],
                               ),
                             ),
@@ -201,7 +207,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                     ),
-                    // Bottom image fixed at the bottom
+                    // Footer image fixed at the bottom
                     Image.asset(bottombar),
                   ],
                 ),
@@ -232,7 +238,7 @@ class _LoginPageState extends State<LoginPage> {
           if (state.error.contains('409')) {
             NavigationService.navigateTo(
               '/otpPage',
-              arguments: {'email': _email.text, 'otpType': OtpType.unAuthorizedLogin},
+              arguments: {'email': state.extra?[0] ?? '', 'otpType': OtpType.signup, 'otpFor': 'email', 'phone': state.extra?[1] ?? ''},
             );
           } else {
             showToast(state.error);

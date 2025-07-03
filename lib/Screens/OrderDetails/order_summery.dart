@@ -122,7 +122,7 @@ class _OrderSummeryState extends State<OrderSummery> {
                           width: 1.0,
                         ),
                       ),
-                      hintText: 'Notes about your order',
+                      hintText: AppLocalizations.of(context)?.notesAboutYourOrder ??  'Notes about your order',
                       // Optional: placeholder text
                       hintStyle: TextStyle(color: Colors.grey),
                     ),
@@ -346,8 +346,8 @@ class _OrderSummeryState extends State<OrderSummery> {
                   onTap: () async {
                     final param = {
                       "address_id": _selectedAddressID,
-                      "payment_method": widget.args['paymentMethod'] as String,
-                      if ((widget.args['phone'] as String).isNotEmpty) "phone_number": "712345679",
+                      /*"payment_method": widget.args['paymentMethod'] as String,*/
+                     /* if ((widget.args['phone'] as String).isNotEmpty) "phone_number": "712345679",*/
                       "shipping_method": widget.args['shippingMethod'] as String,
                       "currency": SharedPreferencesHelper.getString('savedCurrency') ?? 'KES',
                     if (_orderNoteCtrl.text.trim().length > 1) "delivery_instruction": _orderNoteCtrl.text,
@@ -396,10 +396,12 @@ class _OrderSummeryState extends State<OrderSummery> {
       } else if (state is POSuccess) {
         if(state.orderData != null) {
           PlaceOrderData? orderData = state.orderData;
-          orderData?.checkoutSummaryData = summaryData;
-          orderData?.paymentMethod =  widget.args['paymentMethod'] as String;
-          debugPrint('>>>>>>>>>>>>>>${summaryData.discountAmount ?? 0.0}');
-          NavigationService.navigateTo('/paymentDetail',arguments: state.orderData);
+          print(orderData?.payment_url);
+          NavigationService.navigateTo('/webViewScreen',arguments: orderData?.payment_url);
+         /* orderData?.checkoutSummaryData = summaryData;
+          orderData?.paymentMethod =  widget.args['paymentMethod'] as String;*/
+          //debugPrint('>>>>>>>>>>>>>>${summaryData.discountAmount ?? 0.0}');
+          //NavigationService.navigateTo('/paymentDetail',arguments: state.orderData);
         }
       }
     });

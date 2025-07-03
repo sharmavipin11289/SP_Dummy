@@ -76,7 +76,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         Row(
                           children: [
                             Text(
-                              AppLocalizations.of(context)?.forgotPassword ?? "Forgot Password",
+                              AppLocalizations.of(context)?.changePassword ?? "Change Password",
                               style: FontStyles.getStyle(
                                 fontSize: 26,
                                 fontWeight: FontWeight.w700,
@@ -133,6 +133,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   SizedBox(
                     height: 20,
                   ),
+                  if(!isUserLoggedIn())
                   GestureDetector(
                     onTap: () {
                       NavigationService.goBack();

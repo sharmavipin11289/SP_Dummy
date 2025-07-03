@@ -8,6 +8,7 @@ import 'package:sanaa/Navigation/navigation_service.dart';
 import 'package:sanaa/Screens/ShopsPage/cubit/shops_cubit.dart';
 import 'package:sanaa/Screens/ShopsPage/cubit/shops_state.dart';
 import 'package:sanaa/Screens/ShopsPage/model/shop_detail_model.dart';
+import '../../CommonFiles/common_function.dart';
 import '../../CommonFiles/cubit/common_cubit.dart';
 import '../../CommonFiles/image_file.dart';
 import '../../CommonFiles/text_style.dart';
@@ -15,6 +16,7 @@ import '../../CommonWidgets/bottom_sheet.dart';
 import '../../CommonWidgets/category_widget.dart';
 import '../../CommonWidgets/product_card.dart';
 import '../HomePage/Model/shop_model.dart';
+import '../ProductDetailPage/model/product_review_model.dart';
 import '../WishlistPage/cubit/wish_list_cubit.dart';
 
 class ShopDetailPage extends StatefulWidget {
@@ -35,6 +37,11 @@ class _ShopDetailPageState extends State<ShopDetailPage> {
   String _selectedCategory = '';
   String _sortValue = '';
   bool _showLoader = false;
+  int currentTab = 0;
+  List<ProductReview> _productReviews = [];
+  bool _showReview = false;
+  TextEditingController _reviewController = TextEditingController();
+  double _rating = 5;
 
   @override
   void initState() {
@@ -46,6 +53,7 @@ class _ShopDetailPageState extends State<ShopDetailPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // This function will be called after the widget build is complete
       _getDetails(shopData.id ?? '');
+      _getShopReviews();
     });
   }
 
@@ -65,6 +73,10 @@ class _ShopDetailPageState extends State<ShopDetailPage> {
       param = '$param&sort=$_sortValue';
     }
     await _cubit.getShopProducts(param);
+  }
+
+  _getShopReviews() async{
+    await _cubit.getShopReviews(shopData.id ?? '');
   }
 
   void _showCategories(BuildContext context) {
@@ -130,160 +142,214 @@ class _ShopDetailPageState extends State<ShopDetailPage> {
       ),
       body: BlocConsumer<ShopsCubit, ShopsState>(builder: (context, state) {
         return SafeArea(
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 15),
-                  child: Row(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(35),
-                        child: Image.network(
-                          shopDetail?.businessLogoUrl ?? dummyImageUrl,
-                          width: 70,
-                          height: 70,
-                          fit: BoxFit.cover,
-                        ),
+          child: Stack(
+            children: [
+              SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 15),
+                      child: Row(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(35),
+                            child: Image.network(
+                              shopDetail?.businessLogoUrl ?? dummyImageUrl,
+                              width: 70,
+                              height: 70,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          SizedBox(
+                            width: 15,
+                          ),
+                          Text(
+                            shopDetail?.businessName ?? '',
+                            style: FontStyles.getStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
                       ),
-                      SizedBox(
-                        width: 15,
-                      ),
-                      Text(
-                        shopDetail?.businessName ?? '',
+                    ),
+                    SizedBox(
+                      height: 20,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 15),
+                      child: Text(
+                        shopDetail?.description ?? '',
                         style: FontStyles.getStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                SizedBox(
-                  height: 20,
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 15),
-                  child: Text(
-                    shopDetail?.description ?? '',
-                    style: FontStyles.getStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
                     ),
-                  ),
-                ),
-                SizedBox(
-                  height: 20,
-                ),
-                if (shopDetail?.preferredCategories != null)
-                  SizedBox(
-                    height: 130,
-                    child: CategoryWidget(
-                      categoryData: shopDetail?.preferredCategories ?? [],
+                    SizedBox(
+                      height: 20,
                     ),
-                  ),
-                SizedBox(
-                  height: 20,
-                ),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 15),
-                  child: Text(
-                    AppLocalizations.of(context)?.products ?? 'Products',
-                    style: FontStyles.getStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
+                    if (shopDetail?.preferredCategories != null)
+                      SizedBox(
+                        height: 130,
+                        child: CategoryWidget(
+                          categories: shopDetail?.preferredCategories ?? [],
+                        ),
+                      ),
+                    SizedBox(
+                      height: 20,
                     ),
-                  ),
-                ),
-                SizedBox(
-                  height: 20,
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 15),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      GestureDetector(
-                          onTap: () {
-                            _showCategories(context);
-                          },
-                          child: DropDownContainer(option: AppLocalizations.of(context)?.category ?? 'Category')),
-                      GestureDetector(
-                        onTap: () {
-                          showModalBottomSheet(
-                            context: context,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                    SelectableTabs(onTabChange: (index){
+                      setState(() {
+                        currentTab = index;
+                      });
+                    },),
+                    SizedBox(
+                      height: 20,
+                    ),
+                    if(currentTab == 1)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  '${_productReviews.length} ${AppLocalizations.of(context)?.reviews ?? 'Reviews'}',
+                                  style: FontStyles.getStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    if(isUserLoggedIn()) {
+                                      setState(() {
+                                        _showReview = true;
+                                      });
+                                    }else{
+                                      showLoginAlert(context);
+                                    }
+                                  },
+                                  child: Text(
+                                    AppLocalizations.of(context)?.writeAReview ?? 'Write a Review',
+                                    style: FontStyles.getStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF318531),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                            builder: (context) => SortBottomSheet(
-                              onOptionSelected: (index) {
-                                setState(() {
-                                  _selectedSortIndex = index;
-                                });
+                            SizedBox(height: 8),
+                            for (var i = 0; i < _productReviews.length; i++) buildReviewTile(_productReviews[i]),
+                          ],
+                        ),
+                      ),
+                    if(currentTab == 0)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 15),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          GestureDetector(
+                              onTap: () {
+                                _showCategories(context);
                               },
-                              selectedOption: _selectedSortIndex, selectedValue: (value ) {
-                                _sortValue = value;
-                                _getProducts();
+                              child: DropDownContainer(option: AppLocalizations.of(context)?.category ?? 'Category')),
+                          GestureDetector(
+                            onTap: () {
+                              showModalBottomSheet(
+                                context: context,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                                ),
+                                builder: (context) => SortBottomSheet(
+                                  onOptionSelected: (index) {
+                                    setState(() {
+                                      _selectedSortIndex = index;
+                                    });
+                                  },
+                                  selectedOption: _selectedSortIndex, selectedValue: (value ) {
+                                    _sortValue = value;
+                                    _getProducts();
+                                },
+                                ),
+                              );
                             },
+                            child: DropDownContainer(
+                              option: AppLocalizations.of(context)?.sortBy ?? 'Sort By',
+                              borderColor: Colors.transparent,
+                              backgroundColor: Color(0xFFEFEDE7),
                             ),
-                          );
-                        },
-                        child: DropDownContainer(
-                          option: AppLocalizations.of(context)?.sortBy ?? 'Sort By',
-                          borderColor: Colors.transparent,
-                          backgroundColor: Color(0xFFEFEDE7),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(
+                      height: 20,
+                    ),
+                    if(currentTab == 0)
+                    if (_products.isEmpty && (!_showLoader)) Center(child: Text(AppLocalizations.of(context)?.empty ?? 'Empty')),
+                    if(currentTab == 0)
+                    if (_products.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 15),
+                        child: GridView.builder(
+                          shrinkWrap: true,
+                          physics: NeverScrollableScrollPhysics(),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2, // Two columns
+                              crossAxisSpacing: 20, // Horizontal spacing
+                              mainAxisSpacing: 20, // Vertical spacing
+                              childAspectRatio: 0.85),
+                          itemCount: _products.length,
+                          // Number of items in the grid
+                          itemBuilder: (context, index) {
+                            return ProductCard(
+                              product: _products[index],
+                              onTapLikeIcon: (ProductData product) {
+                                if (product.isInWishlist ?? false) {
+                                  setState(() {
+                                    product.isInWishlist = false;
+                                  });
+                                  final param = {"product_id": product.id};
+                                  context.read<WishListCubit>().deleteProductFromWishList(param);
+                                }else{
+                                  print(">>>>>");
+                                  final param = {"product_id": product.id};
+                                  setState(() {
+                                    product.isInWishlist = true;
+                                  });
+                                  context.read<CommonCubit>().addProductToWishList(param);
+                                }
+                              },
+                              onTapCartIcon: (ProductData product) {
+                                final param = {"product_variant_id": product.product_variant_id ?? ''};
+                                context.read<CommonCubit>().addProductToCart(param);
+                              },
+                            );
+                          },
                         ),
                       ),
-                    ],
-                  ),
+                  ],
                 ),
-                SizedBox(
-                  height: 20,
-                ),
-                if (_products.isEmpty && (!_showLoader)) Center(child: Text('Empty')),
-                if (_products.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 15),
-                    child: GridView.builder(
-                      shrinkWrap: true,
-                      physics: NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2, // Two columns
-                          crossAxisSpacing: 20, // Horizontal spacing
-                          mainAxisSpacing: 20, // Vertical spacing
-                          childAspectRatio: 0.85),
-                      itemCount: _products.length,
-                      // Number of items in the grid
-                      itemBuilder: (context, index) {
-                        return ProductCard(
-                          product: _products[index],
-                          onTapLikeIcon: (ProductData product) {
-                            if (product.isInWishlist ?? false) {
-                              setState(() {
-                                product.isInWishlist = false;
-                              });
-                              final param = {"product_id": product.id};
-                              context.read<WishListCubit>().deleteProductFromWishList(param);
-                            }else{
-                              print(">>>>>");
-                              final param = {"product_id": product.id};
-                              setState(() {
-                                product.isInWishlist = true;
-                              });
-                              context.read<CommonCubit>().addProductToWishList(param);
-                            }
-                          },
-                          onTapCartIcon: (ProductData product) {
-                            final param = {"product_variant_id": product.product_variant_id ?? ''};
-                            context.read<CommonCubit>().addProductToCart(param);
-                          },
-                        );
-                      },
-                    ),
-                  ),
-              ],
-            ),
+              ),
+              if (_showReview)
+                buildReviewDialog(context: context, title: AppLocalizations.of(context)?.writeAReview ?? 'Write a Review',rateText: AppLocalizations.of(context)?.rate ?? 'Rate',hintText: AppLocalizations.of(context)?.describeYourExperience ?? 'Describe your experience?',submitText: AppLocalizations.of(context)?.submitReview ?? 'Submit Review', emptyReviewMessage: AppLocalizations.of(context)?.reviewDetailShouldNotBeEmpty ?? "Review should not be empty", reviewController: _reviewController, rating: _rating, onRatingChanged: (rating) {
+                  setState(() {
+                    _rating = rating;
+                  });
+                }, onSubmit: (param){
+                  _cubit.submitProductReview(param, shopData.id ?? '');
+                }, productId: '', crossTapped: (){setState(() {
+                  _showReview = false;
+                });}),
+            ],
           ),
         );
       }, listener: (context, state) {
@@ -296,8 +362,97 @@ class _ShopDetailPageState extends State<ShopDetailPage> {
             _showLoader = true;
             _getProducts();
           }
+        } else if (state is ShopReviewSuccess) {
+           _productReviews =  state.reviews;
+        } else if(state is SubmitReviewSuccess) {
+          setState(() {
+            _showReview = false;
+            _getShopReviews();
+          });
         }
       }),
+    );
+  }
+}
+
+
+
+
+class SelectableTabs extends StatefulWidget {
+  Function(int) onTabChange;
+   SelectableTabs({Key? key, required this.onTabChange}) : super(key: key);
+
+  @override
+  _SelectableTabsState createState() => _SelectableTabsState();
+}
+
+class _SelectableTabsState extends State<SelectableTabs> {
+  int _selectedIndex = 0; // Default to "REVIEW" tab (index 1)
+
+  void _onTabTap(int index) {
+    setState(() {
+      if (_selectedIndex != index) {
+        _selectedIndex = index;
+        widget.onTabChange(index);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 50,
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _onTabTap(0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: _selectedIndex == 0 ? Colors.green : Colors.grey[200],
+                  border: _selectedIndex == 0
+                      ? Border(bottom: BorderSide(color: Colors.red, width: 2))
+                      : null,
+                ),
+                child: Center(
+                  child: Text(
+                    AppLocalizations.of(context)?.product ?? "PRODUCT",
+                    style: TextStyle(
+                      color: _selectedIndex == 0 ? Colors.white : Colors.black,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _onTabTap(1),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: _selectedIndex == 1 ? Colors.green : Colors.grey[200],
+                  border: _selectedIndex == 1
+                      ? Border(bottom: BorderSide(color: Colors.red, width: 2))
+                      : null,
+                ),
+                child: Center(
+                  child: Text(
+                    AppLocalizations.of(context)?.reviews ?? "REVIEW",
+                    style: TextStyle(
+                      color: _selectedIndex == 1 ? Colors.white : Colors.black,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -1,3 +1,4 @@
+/*
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sanaa/CommonFiles/common_function.dart';
@@ -64,7 +65,9 @@ class _PaymentDetailState extends State<PaymentDetail> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '${AppLocalizations.of(context)?.paymentMethod ?? 'Payment Method'}' /*"${AppLocalizations.of(context)?.discount ?? 'Discount'} ${_couponTxtController.text.isNotEmpty ? '(${_couponTxtController.text} ${AppLocalizations.of(context)?.applied ?? 'Applied'})' : ''}"*/,
+                    '${AppLocalizations.of(context)?.paymentMethod ?? 'Payment Method'}' */
+/*"${AppLocalizations.of(context)?.discount ?? 'Discount'} ${_couponTxtController.text.isNotEmpty ? '(${_couponTxtController.text} ${AppLocalizations.of(context)?.applied ?? 'Applied'})' : ''}"*//*
+,
                     style: FontStyles.getStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
@@ -90,14 +93,18 @@ class _PaymentDetailState extends State<PaymentDetail> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '${AppLocalizations.of(context)?.orderNo ?? 'Order No.'}' /*"${AppLocalizations.of(context)?.discount ?? 'Discount'} ${_couponTxtController.text.isNotEmpty ? '(${_couponTxtController.text} ${AppLocalizations.of(context)?.applied ?? 'Applied'})' : ''}"*/,
+                    '${AppLocalizations.of(context)?.orderNo ?? 'Order No.'}' */
+/*"${AppLocalizations.of(context)?.discount ?? 'Discount'} ${_couponTxtController.text.isNotEmpty ? '(${_couponTxtController.text} ${AppLocalizations.of(context)?.applied ?? 'Applied'})' : ''}"*//*
+,
                     style: FontStyles.getStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
                     ),
                   ),
                   Text(
-                    '${widget.orderData.orderNumber}' /*"${summaryData?.discountAmount?.toStringAsFixed(2) ?? '0.00'}"*/,
+                    '${widget.orderData.orderNumber}' */
+/*"${summaryData?.discountAmount?.toStringAsFixed(2) ?? '0.00'}"*//*
+,
                     style: FontStyles.getStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -228,7 +235,9 @@ class _PaymentDetailState extends State<PaymentDetail> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                '${AppLocalizations.of(context)?.shipping ?? 'Shipping'}' /*"${AppLocalizations.of(context)?.discount ?? 'Discount'} ${_couponTxtController.text.isNotEmpty ? '(${_couponTxtController.text} ${AppLocalizations.of(context)?.applied ?? 'Applied'})' : ''}"*/,
+                                '${AppLocalizations.of(context)?.shipping ?? 'Shipping'}' */
+/*"${AppLocalizations.of(context)?.discount ?? 'Discount'} ${_couponTxtController.text.isNotEmpty ? '(${_couponTxtController.text} ${AppLocalizations.of(context)?.applied ?? 'Applied'})' : ''}"*//*
+,
                                 style: FontStyles.getStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w400,
@@ -253,7 +262,9 @@ class _PaymentDetailState extends State<PaymentDetail> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                '${AppLocalizations.of(context)?.discount ?? 'Discount'}' /*"${AppLocalizations.of(context)?.discount ?? 'Discount'} ${_couponTxtController.text.isNotEmpty ? '(${_couponTxtController.text} ${AppLocalizations.of(context)?.applied ?? 'Applied'})' : ''}"*/,
+                                '${AppLocalizations.of(context)?.discount ?? 'Discount'}' */
+/*"${AppLocalizations.of(context)?.discount ?? 'Discount'} ${_couponTxtController.text.isNotEmpty ? '(${_couponTxtController.text} ${AppLocalizations.of(context)?.applied ?? 'Applied'})' : ''}"*//*
+,
                                 style: FontStyles.getStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w400,
@@ -335,12 +346,14 @@ class _PaymentDetailState extends State<PaymentDetail> {
                 };
                 await _cubit.confirmOrder(param);
                 //await context.read<CommonCubit>().checkoutInitiate();
-                /* await context.read<CommonCubit>().checkoutSummary(_couponTxtController.text, _products.first.currency ?? '').then((isSuccess) {
+                */
+/* await context.read<CommonCubit>().checkoutSummary(_couponTxtController.text, _products.first.currency ?? '').then((isSuccess) {
                                         if (isSuccess) {
                                         } else {
                                           print("Failed to initiate checkout");
                                         }
-                                      });*/
+                                      });*//*
+
               },
               child: Container(
                 margin: EdgeInsets.symmetric(horizontal: 24),
@@ -381,3 +394,4 @@ class _PaymentDetailState extends State<PaymentDetail> {
 
   }
 }
+*/

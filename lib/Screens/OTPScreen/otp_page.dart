@@ -6,6 +6,7 @@ import 'package:sanaa/CommonFiles/common_variables.dart';
 import 'package:sanaa/Navigation/navigation_service.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:sanaa/Screens/OTPScreen/cubit/otp_cubit.dart';
+import 'package:sanaa/firebase_messaging/firebase_notification.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../CommonFiles/common_function.dart';
 import '../../CommonFiles/image_file.dart';
@@ -147,8 +148,9 @@ class _OtpPageState extends State<OtpPage> {
                     ),
                     Spacer(),
                     GestureDetector(
-                      onTap: () {
-                        if (otpType == OtpType.signup) {
+                      onTap: () async{
+                        print(otpType);
+                        if (otpType == OtpType.signup || otpType == OtpType.unAuthorizedSignup) {
                           if (otpFor.toLowerCase() == 'email') {
                             _emailOTP = _otpController.text;
                             setState(() {
@@ -160,13 +162,19 @@ class _OtpPageState extends State<OtpPage> {
                             final param = {"email": email, "phone_number": '+254$phone', "email_otp": _emailOTP, "phone_otp": _phoneOTP};
                             context.read<OTPCubit>().validateOTP(param: param);
                           }
-                        } else if (otpType == OtpType.login) {
+                        }
+                        else if (otpType == OtpType.login || otpType == OtpType.unAuthorizedLogin) {
+
+                          final fbToken = await FirebaseNotifications().getToken();
+                          print("FBToken:: $fbToken");
                           final param = {
                             "email_or_phone_number": email,
                             "otp": _otpController.text,
+                            "device_token": fbToken
                           };
                           context.read<OTPCubit>().validateLoginOTP(param: param);
-                        } else if (otpType == OtpType.forgotPassword) {
+                        }
+                        else if (otpType == OtpType.forgotPassword) {
                           final param = {
                             "email_or_phone_number": email,
                             "otp":  _otpController.text,

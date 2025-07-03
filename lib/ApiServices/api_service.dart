@@ -3,8 +3,11 @@ import 'package:dio/dio.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:sanaa/SharedPrefrence/shared_prefrence.dart';
 
+import '../Screens/Account/Model/language_model.dart';
+
 class ApiService {
   final String baseUrl = 'https://sanna-api.udaipurhiring.com/api/v1/';
+  //final String baseUrl = 'https://api-sanaa.arshantanu.in/api/v1/';
   late final Dio _dio;
 
   ApiService() {
@@ -35,6 +38,12 @@ class ApiService {
 
     Map<String, dynamic> updatedQueryParameters = queryParameters != null ? Map<String, String>.from(queryParameters) : {};
     updatedQueryParameters['currency'] = SharedPreferencesHelper.getString('savedCurrency') ?? 'KES';
+   // updatedQueryParameters['locale'] = SharedPreferencesHelper.getString('locale') ?? 'en';
+    final savedLanguage = SharedPreferencesHelper.getCustomObject<LanguageData>(
+      'language',
+          (json) => LanguageData.fromJson(json),
+    );
+    updatedQueryParameters['locale'] = savedLanguage?.locale ?? 'en';
 
     final uri = (updatedQueryParameters.isNotEmpty)
         ? () {
@@ -58,7 +67,7 @@ class ApiService {
 
     final defaultHeaders = {
       'Content-Type': 'application/json',
-      if (bearerToken != null) 'Authorization': 'Bearer $bearerToken',
+      if (bearerToken != null && bearerToken.isNotEmpty) 'Authorization': 'Bearer $bearerToken',
     };
 
     // Add currency to body for POST and PATCH requests
@@ -119,20 +128,29 @@ class ApiService {
       print("Response Body: ${response.data}");
 
       if (response.statusCode != null && response.statusCode! >= 200 && response.statusCode! < 300) {
+        print("Response Status: ${response.statusCode}");
         return fromJson(response.data);
       } else if (response.statusCode == 409) {
+        print("Response Status: ${response.statusCode}");
         throw Exception('status: ${response.statusCode},${response.data['message'] ?? response.statusMessage}}');
       } else if (response.statusCode != null && response.statusCode! >= 400 && response.statusCode! < 500) {
+        print("Response Status: ${response.statusCode}");
         throw Exception('${response.data['message'] ?? response.statusMessage}');
       } else if (response.statusCode != null && response.statusCode! >= 500) {
+        print("Response Status: ${response.statusCode}");
         throw Exception('${response.statusMessage}');
       } else {
+        print("Response Status: ${response.statusCode}");
         throw Exception('${response.data}');
       }
     } catch (e, stackTrace) {
       if (e is DioException) {
-        if (e.response != null) {
-          print("Dio Error Response: ${e.response?.data}");
+      if (e.response?.statusCode == 409) {
+        print("Response Status: ${e.response?.statusCode}");
+       // throw Exception('status: ${e.response?.statusCode},${e.response?.data['message'] ?? e.message}, ${e.response}');
+        return fromJson(e.response?.data);
+      }else  if (e.response != null) {
+          print("Dio Error Response: ${e.response?.statusCode}");
           throw Exception('${e.response?.data['message'] ?? e.message}');
         } else {
           print("Dio Error: ${e.message}");

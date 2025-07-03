@@ -5,6 +5,7 @@ import 'package:sanaa/Screens/Account/Model/user_detail_model.dart';
 import 'package:sanaa/Screens/OrderDetails/Model/order_detail_model.dart';
 import 'package:sanaa/Screens/OrderDetails/Model/place_order_model.dart';
 
+import '../../../CommonFiles/Model/meta_model.dart';
 import '../Model/order_model.dart';
 
 abstract class OrderState {}
@@ -17,7 +18,8 @@ class OrdersInitial extends OrderState {}
 class Ordersloading extends OrderState{}
 class OrdersSuccess extends OrderState {
   List<Order> orders;
-  OrdersSuccess(this.orders);
+  Meta? meta;
+  OrdersSuccess(this.orders, this.meta);
 }
 
 class OrderDetailSuccess extends OrderState {

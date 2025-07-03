@@ -41,3 +41,16 @@ class GoogleLoginFailed extends SignupState {
   final String error;
   GoogleLoginFailed(this.error);
 }
+
+
+class AppleLoginLoading extends SignupState {}
+
+class AppleLoginSuccess extends SignupState {
+  CommonResponse response;
+  AppleLoginSuccess({required this.response});
+}
+
+class AppleLoginFailed extends SignupState {
+  final String error;
+  AppleLoginFailed(this.error);
+}

@@ -1,0 +1,5 @@
+-keep class com.google.firebase.** { *; }
+-keep class com.dexterous.flutterlocalnotifications.** { *; }
+-keep class androidx.** { *; }
+-dontwarn com.google.firebase.**
+-dontwarn androidx.**

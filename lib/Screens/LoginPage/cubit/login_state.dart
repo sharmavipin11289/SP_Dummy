@@ -11,5 +11,6 @@ class LoginSuccess extends LoginState {
 
 class LoginFailure extends LoginState {
   final String error;
-  LoginFailure(this.error);
+  List<dynamic>? extra;
+  LoginFailure(this.error, {this.extra = null });
 }

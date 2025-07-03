@@ -6,6 +6,8 @@ import 'package:sanaa/Screens/MyCartPage/Model/cart_model.dart';
 import 'package:sanaa/Screens/MyCartPage/Model/cart_summary_model.dart';
 import 'package:sanaa/Screens/MyCartPage/Model/coupon_model.dart';
 
+import '../../PaymentPage/model/checkout_summary_model.dart';
+
 abstract class CartState {}
 
 class CartInitial extends CartState {}
@@ -54,5 +56,18 @@ class CouponFailed extends CartState {
   CouponFailed({required this.error});
 }
 
+
+
+class OrderSummeryLoading extends CartState {}
+
+class OrderSummeryLoaded extends CartState {
+  CheckoutSummaryData? summaryData;
+  OrderSummeryLoaded({this.summaryData});
+}
+
+class OrderSummeryFailed extends CartState {
+  String error;
+  OrderSummeryFailed({required this.error});
+}
 
 

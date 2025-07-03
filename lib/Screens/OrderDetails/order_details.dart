@@ -165,7 +165,7 @@ class _OrderDetailsState extends State<OrderDetails> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Products (${orderData?.orderDetails?.totalProducts ?? '-'})',
+                '${AppLocalizations.of(context)?.products ?? 'Products'} (${orderData?.orderDetails?.totalProducts ?? '-'})',
                 style: FontStyles.getStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -190,12 +190,15 @@ class _OrderDetailsState extends State<OrderDetails> {
   Widget _productItem(OrderItems orderItem) {
     return InkWell(
       onTap: () {
-        final param = {
-          "status": orderItem.status ?? '',
-          "tracking_number": orderData?.orderDetails?.number ?? '',
-        };
-        //_cubit.getInvoiceFor(orderData?.orderDetails?.id ?? '', orderItem.id ?? '', param);
-        _downloadInvoice(orderData?.orderDetails?.id ?? '', orderItem.id ?? '', param);
+        print(orderItem.status);
+        if((orderItem.status ?? '').toLowerCase() == 'delivered'){
+          final param = {
+            "status": orderItem.status ?? '',
+            "tracking_number": orderData?.orderDetails?.number ?? '',
+          };
+          //_cubit.getInvoiceFor(orderData?.orderDetails?.id ?? '', orderItem.id ?? '', param);
+          _downloadInvoice(orderData?.orderDetails?.id ?? '', orderItem.id ?? '', param);
+        }
       },
       child: Card(
         margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -287,7 +290,7 @@ class _OrderDetailsState extends State<OrderDetails> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Price Details (${orderData?.orderDetails?.totalProducts})',
+            '${AppLocalizations.of(context)?.priceDetail ?? 'Price Details'} (${orderData?.orderDetails?.totalProducts})',
             style: FontStyles.getStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,

@@ -13,6 +13,7 @@ import 'package:sanaa/CommonWidgets/header_widget.dart';
 import 'package:sanaa/CommonWidgets/popular_item_widget.dart';
 import 'package:sanaa/CommonWidgets/recommended_widget.dart';
 import 'package:sanaa/CommonWidgets/shops_widget.dart';
+import 'package:sanaa/Screens/HomePage/Model/advertisment_model.dart';
 import 'package:sanaa/Screens/HomePage/Model/banner_model.dart';
 import 'package:sanaa/Screens/HomePage/Model/main_category_model.dart';
 import 'package:sanaa/Screens/HomePage/Model/offers_model.dart';
@@ -20,11 +21,14 @@ import 'package:sanaa/Screens/HomePage/Model/shop_model.dart';
 import 'package:sanaa/Screens/HomePage/cubit/home_cubit.dart';
 import 'package:sanaa/Screens/HomePage/cubit/home_state.dart';
 import 'package:sanaa/SharedPrefrence/shared_prefrence.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 import '../../CommonFiles/common_function.dart';
 import '../../CommonFiles/text_style.dart';
 import '../../Navigation/navigation_service.dart';
+import '../../firebase_messaging/firebase_notification.dart';
 import '../../main.dart';
 import '../Account/Model/user_detail_model.dart';
+import '../LoginPage/auth_service.dart';
 import 'Model/testimonial_model.dart';
 
 class HomePage extends StatefulWidget {
@@ -36,7 +40,9 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  late HomeCubit _homeCubit;
+  late final HomeCubit _homeCubit;
+  late final WebViewController _controller;
+  final ValueNotifier<bool> _isMounted = ValueNotifier<bool>(true);
   List<BannerData> bannerData = [];
   List<MainCategoryData> mainCategories = [];
   List<OfferData> offers = [];
@@ -44,83 +50,110 @@ class _HomePageState extends State<HomePage> {
   List<ProductData> popularProduct = [];
   List<ProductData> recommendedProduct = [];
   List<Testimonial> _testimonials = [];
+  List<AdvertismentData> _advertismentData = [];
   UserDetail? userDetail;
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     _homeCubit = BlocProvider.of<HomeCubit>(context);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // This function will be called after the widget build is complete
-      getBanners();
-      getCategories();
-      getOffers();
-      getShops();
-      getPopularProducts();
-      getRecommendedProducts();
-      _getProfileData();
-      _getTestimonials();
+    _initializeWebView();
+    _initializeData();
+  }
 
-      Future.microtask(() {
-        networkStatus.addListener(() {
-          print("::::::::::: ${networkStatus.isOnline}");
-          if (!networkStatus.isOnline) {
-            print("inside>>>>>>>>>>>");
-            showNoInternetAlert(context);
-          }
-        });
-      });
+  void _initializeWebView() {
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(const Color(0x00000000))
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onProgress: (int progress) {
+            if (_isMounted.value) {
+              debugPrint('WebView loading: $progress%');
+            }
+          },
+          onPageStarted: (String url) {},
+          onPageFinished: (String url) {},
+          onWebResourceError: (WebResourceError error) {
+            if (_isMounted.value) {
+              debugPrint('WebView error: $error');
+            }
+          },
+        ),
+      );
+  }
+
+  void _initializeData() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_isMounted.value) return;
+
+      // Fetch data
+      _homeCubit.getBanners();
+      _homeCubit.getMainCategories();
+      _homeCubit.getOffers();
+      _homeCubit.getShops();
+      _homeCubit.getPopularProducts();
+      _homeCubit.getRecommendedProducts();
+      _getProfileData();
+      _homeCubit.getTestimonials();
+      _homeCubit.getAdvertismentData();
+
+      // Network status listener
+      networkStatus.addListener(_networkListener);
     });
   }
 
-  getBanners() async {
-    await _homeCubit.getBanners();
-  }
-
-  getCategories() async {
-    await _homeCubit.getMainCategories();
-  }
-
-  getOffers() async {
-    await _homeCubit.getOffers();
-  }
-
-  getShops() async {
-    await _homeCubit.getShops();
-  }
-
-  getPopularProducts() async {
-    await _homeCubit.getPopularProducts();
-  }
-
-  getRecommendedProducts() async {
-    await _homeCubit.getRecommendedProducts();
-  }
-
-  _getProfileData() async {
-    final detail = await _homeCubit.getSavedUserDetail();
-    print(detail);
-    if (detail == null) {
-      await _homeCubit.getUserDetails();
-    } else {
-      setState(() {
-        userDetail = detail;
-      });
+  void _networkListener() {
+    if (!_isMounted.value) return;
+    if (!networkStatus.isOnline) {
+      showNoInternetAlert(context);
     }
   }
 
-  _getTestimonials() async {
-    await _homeCubit.getTestimonials();
+  void loadAd(String? jsonData) {
+    if (!_isMounted.value || jsonData == null) return;
+
+    final String htmlContent = '''
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <style>
+        body { margin: 0; padding: 0; }
+        .adsbygoogle { width: 100%; height: auto; }
+      </style>
+    </head>
+    <body>
+      $jsonData
+    </body>
+    </html>
+    ''';
+
+    _controller.loadHtmlString(htmlContent);
+  }
+
+  Future<void> _getProfileData() async {
+    if (!_isMounted.value) return;
+
+    final detail = await _homeCubit.getSavedUserDetail();
+    if (mounted && detail != null) {
+      setState(() {
+        userDetail = detail;
+      });
+    } else {
+      await _homeCubit.getUserDetails();
+    }
   }
 
   void _showLogoutDialog(BuildContext context) {
+    if (!_isMounted.value) return;
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text(
-            "Logout",
+            AppLocalizations.of(context)?.logout ?? "Logout",
             style: FontStyles.getStyle(
               fontSize: 17,
               fontWeight: FontWeight.w600,
@@ -136,30 +169,30 @@ class _HomePageState extends State<HomePage> {
           actions: [
             TextButton(
               child: Text(
-                "Cancel",
+                AppLocalizations.of(context)?.cancel ?? "Cancel",
                 style: FontStyles.getStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
+                if (_isMounted.value) {
+                  Navigator.of(context).pop();
+                }
               },
             ),
             TextButton(
               child: Text(
-                "Logout",
+                AppLocalizations.of(context)?.logout ?? "Logout",
                 style: FontStyles.getStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               onPressed: () async {
-                Navigator.of(context).pop(); // Close the dialog
-                // Handle navigation
-                await SharedPreferencesHelper.remove('token');
-                await SharedPreferencesHelper.remove('user_detail');
-                NavigationService.navigateAndClearStack('/onBoard');
+                if (!_isMounted.value) return;
+                final fbToken = await FirebaseNotifications().getToken();
+                await _homeCubit.logoutUser({'app_device_token': fbToken});
               },
             ),
           ],
@@ -168,45 +201,67 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  void _showNotificationSheet() {
+    if (!_isMounted.value) return;
+    NavigationService.navigateTo('/notificationPage');
+  }
+
+  @override
+  void dispose() {
+    _isMounted.value = false;
+    networkStatus.removeListener(_networkListener);
+    _isMounted.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<HomeCubit, HomeState>(
       listener: (context, state) async {
+        if (!_isMounted.value) return;
+
         if (state is HomeBannerSuccess) {
-          setState(() {
-            bannerData = state.bannerData;
-          });
+          bannerData = state.bannerData;
         } else if (state is MainCategorySuccess) {
-          setState(() {
-            mainCategories = state.categoryData;
-          });
+          mainCategories = state.categoryData;
         } else if (state is OffersSuccess) {
-          setState(() {
-            offers = state.offerData;
-          });
+          offers = state.offerData;
         } else if (state is ShopsSuccess) {
-          setState(() {
-            shops = state.shopsData;
-          });
+          shops = state.shopsData;
         } else if (state is RecommendedProductSuccess) {
-          setState(() {
-            recommendedProduct = state.recommendedProducts;
-          });
+          recommendedProduct = state.recommendedProducts;
         } else if (state is PopularProductSuccess) {
-          setState(() {
-            popularProduct = state.popularProducts;
-          });
+          popularProduct = state.popularProducts;
         } else if (state is ProfileSuccess) {
           if (state.userDetail != null) {
             await _homeCubit.saveUserDetail(state.userDetail!);
-            userDetail = state.userDetail;
+            if (mounted) {
+              setState(() {
+                userDetail = state.userDetail;
+              });
+            }
           }
         } else if (state is ProfileFailed) {
-          print("Profile load err:: ${state.error}");
+          debugPrint("Profile load err: ${state.error}");
         } else if (state is TestimonialsSuccess) {
-          setState(() {
-            _testimonials = state.testimonials;
-          });
+          _testimonials = state.testimonials;
+        } else if (state is AdvertismentSuccess) {
+          _advertismentData = state.advertismentData;
+          if (_advertismentData.isNotEmpty) {
+            loadAd(_advertismentData.first.script);
+          }
+        } else if (state is LogoutSuccess) {
+          if (mounted) {
+            Navigator.of(context).pop();
+            await SharedPreferencesHelper.remove('token');
+            await SharedPreferencesHelper.remove('user_detail');
+            await AuthService().signOut();
+            NavigationService.navigateAndClearStack('/onBoard');
+          }
+        } else if (state is LogoutFailed) {
+          if (mounted) {
+            showToast(state.error.toString());
+          }
         }
       },
       builder: (context, state) {
@@ -218,193 +273,184 @@ class _HomePageState extends State<HomePage> {
               padding: const EdgeInsets.symmetric(horizontal: 10),
               child: (!isUserLoggedIn())
                   ? Center(
-                    child:
-                      ElevatedButton(
-                          onPressed: () {
-                            NavigationService.navigateTo('/loginPage',arguments: true);
+                child: ElevatedButton(
+                  onPressed: () {
+                    if (_isMounted.value) {
+                      NavigationService.navigateTo('/loginPage', arguments: true);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                  ),
+                  child: Text(
+                    AppLocalizations.of(context)?.login ??  'Login',
+                    style: FontStyles.getStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              )
+                  : ListView(
+                padding: EdgeInsets.zero,
+                children: <Widget>[
+                  DrawerHeader(
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        GestureDetector(
+                          onTap: () {
+                            if (_isMounted.value) {
+                              _scaffoldKey.currentState?.closeEndDrawer();
+                            }
                           },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
-                          ),
-                          child: Text(
-                            'Login',
-                            style: FontStyles.getStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
+                          child: Image.asset(
+                            back,
+                            width: 36,
+                            height: 36,
                           ),
                         ),
-
-
-                  )
-                  : ListView(
-                      padding: EdgeInsets.zero,
-                      children: <Widget>[
-                        DrawerHeader(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  _scaffoldKey.currentState?.closeEndDrawer();
-                                },
-                                child: Image.asset(
-                                  back,
-                                  width: 36,
-                                  height: 36,
-                                ),
-                              ),
-                              SizedBox(height: 30),
-                              if (!isUserLoggedIn())
-                                ElevatedButton(
-                                  onPressed: () {},
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.black,
-                                  ),
-                                  child: Text(
-                                    'Login',
-                                    style: FontStyles.getStyle(
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
+                        const SizedBox(height: 30),
+                        if (isUserLoggedIn())
+                          InkWell(
+                            onTap: () {
+                              if (_isMounted.value) {
+                                Navigator.pop(context);
+                                NavigationService.navigateTo('/profilePage');
+                              }
+                            },
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 66,
+                                  height: 66,
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(33),
+                                    child: Image.network(
+                                      userDetail?.profilePictureUrl ?? dummyImageUrl,
+                                      fit: BoxFit.cover,
                                     ),
                                   ),
                                 ),
-                              if (isUserLoggedIn())
-                                InkWell(
-                                  onTap: (){
-                                    Navigator.pop(context);
-                                    NavigationService.navigateTo('/profilePage');
-                                  },
-                                  child: Row(
-                                    children: [
-                                      SizedBox(
-                                        width: 66,
-                                        height: 66,
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(33),
-                                          child: Image.network(
-                                            userDetail?.profilePictureUrl ?? dummyImageUrl,
-                                            fit: BoxFit.cover,
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        width: 10,
-                                      ),
-                                      Expanded(
-                                        child: Text(
-                                          userDetail?.name ?? '',
-                                          style: FontStyles.getStyle(
-                                            fontSize: 17,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                      Icon(Icons.arrow_forward_ios_rounded)
-                                    ],
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    userDetail?.name ?? '',
+                                    style: FontStyles.getStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                )
-                            ],
-                          ),
-                        ),
-                        ListTile(
-                          leading: Image.asset(
-                            userCircle,
-                            width: 22,
-                            height: 22,
-                          ),
-                          trailing: Icon(
-                            Icons.arrow_forward_ios_rounded,
-                            size: 20,
-                          ),
-                          title: Text(
-                            AppLocalizations.of(context)?.personalInfo ?? 'Personal Information',
-                            style: FontStyles.getStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                                ),
+                                const Icon(Icons.arrow_forward_ios_rounded)
+                              ],
                             ),
-                          ),
-                          onTap: () {
-                            // Handle navigation
-                            Navigator.pop(context);
-                            NavigationService.navigateTo('/profileDetail');
-                          },
-                        ),
-                        Divider(),
-                        ListTile(
-                          leading: Image.asset(
-                            location,
-                            width: 22,
-                            height: 22,
-                          ),
-                          trailing: Icon(
-                            Icons.arrow_forward_ios_rounded,
-                            size: 20,
-                          ),
-                          title: Text(
-                            AppLocalizations.of(context)?.deliveryAddress ?? 'Delivery Address',
-                            style: FontStyles.getStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          onTap: () {
-                            // Handle navigation
-                            Navigator.pop(context);
-                            NavigationService.navigateTo('/deliveryAddress');
-                          },
-                        ),
-                        Divider(),
-                        ListTile(
-                          leading: Image.asset(
-                            box,
-                            width: 22,
-                            height: 22,
-                          ),
-                          trailing: Icon(
-                            Icons.arrow_forward_ios_rounded,
-                            size: 20,
-                          ),
-                          title: Text(
-                            AppLocalizations.of(context)?.orders ?? 'Orders',
-                            style: FontStyles.getStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          onTap: () {
-                            // Handle navigation
-                            Navigator.pop(context);
-                            NavigationService.navigateTo('/orderList',arguments: false);
-                          },
-                        ),
-                        Divider(),
-                        ListTile(
-                          leading: Icon(Icons.logout),
-                          trailing: Icon(
-                            Icons.arrow_forward_ios_rounded,
-                            size: 20,
-                          ),
-                          title: Text(
-                            AppLocalizations.of(context)?.logout ?? 'LOGOUT',
-                            style: FontStyles.getStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          onTap: () async {
-                            _showLogoutDialog(context);
-                          },
-                        ),
+                          )
                       ],
                     ),
+                  ),
+                  ListTile(
+                    leading: Image.asset(
+                      userCircle,
+                      width: 22,
+                      height: 22,
+                    ),
+                    trailing: const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 20,
+                    ),
+                    title: Text(
+                      AppLocalizations.of(context)?.personalInfo ?? 'Personal Information',
+                      style: FontStyles.getStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    onTap: () {
+                      if (_isMounted.value) {
+                        Navigator.pop(context);
+                        NavigationService.navigateTo('/profileDetail');
+                      }
+                    },
+                  ),
+                  const Divider(),
+                  ListTile(
+                    leading: Image.asset(
+                      location,
+                      width: 22,
+                      height: 22,
+                    ),
+                    trailing: const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 20,
+                    ),
+                    title: Text(
+                      AppLocalizations.of(context)?.deliveryAddress ?? 'Delivery Address',
+                      style: FontStyles.getStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    onTap: () {
+                      if (_isMounted.value) {
+                        Navigator.pop(context);
+                        NavigationService.navigateTo('/deliveryAddress');
+                      }
+                    },
+                  ),
+                  const Divider(),
+                  ListTile(
+                    leading: Image.asset(
+                      box,
+                      width: 22,
+                      height: 22,
+                    ),
+                    trailing: const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 20,
+                    ),
+                    title: Text(
+                      AppLocalizations.of(context)?.orders ?? 'Orders',
+                      style: FontStyles.getStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    onTap: () {
+                      if (_isMounted.value) {
+                        Navigator.pop(context);
+                        NavigationService.navigateTo('/orderList', arguments: false);
+                      }
+                    },
+                  ),
+                  const Divider(),
+                  ListTile(
+                    leading: const Icon(Icons.logout),
+                    trailing: const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 20,
+                    ),
+                    title: Text(
+                      AppLocalizations.of(context)?.logout ?? 'LOGOUT',
+                      style: FontStyles.getStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    onTap: () {
+                      if (_isMounted.value) {
+                        _showLogoutDialog(context);
+                      }
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
           body: SafeArea(
@@ -412,16 +458,22 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(
-                    height: 20,
-                  ),
+                  const SizedBox(height: 20),
                   HeaderWidget(
                     scaffoldKey: _scaffoldKey,
                     userDetail: userDetail,
+                    onTapNotificationIcon: () {
+                      if (_isMounted.value) {
+                        if (isUserLoggedIn()) {
+
+                      _showNotificationSheet();
+                      } else {
+                      showLoginAlert(context);
+                      }
+                    }
+                    },
                   ),
-                  const SizedBox(
-                    height: 20,
-                  ),
+                  const SizedBox(height: 20),
                   if (bannerData.isNotEmpty)
                     SizedBox(
                       height: 160,
@@ -429,25 +481,23 @@ class _HomePageState extends State<HomePage> {
                         banners: bannerData,
                         paddingHorizontal: 8,
                       ),
-                    ),
-                  if (bannerData.isEmpty) const CircularProgressIndicator(),
-                  const SizedBox(
-                    height: 20,
-                  ),
+                    )
+                  else
+                    const Center(child: CircularProgressIndicator()),
+                  const SizedBox(height: 20),
                   if (mainCategories.isNotEmpty)
                     SizedBox(
                       height: 130,
                       child: CategoryWidget(
-                        categoryData: mainCategories,
+                        categories: mainCategories,
                       ),
                     ),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  if (recommendedProduct.length > 0)
+                  const SizedBox(height: 20),
+                  if (recommendedProduct.isNotEmpty)
                     RecommendedWidget(
                       products: recommendedProduct,
                       onTapLikeIcon: (ProductData product) {
+                        if (!_isMounted.value) return;
                         final param = {"product_id": product.id};
                         setState(() {
                           product.isInWishlist = true;
@@ -455,32 +505,37 @@ class _HomePageState extends State<HomePage> {
                         context.read<CommonCubit>().addProductToWishList(param);
                       },
                       onTapCartIcon: (ProductData product) {
+                        if (!_isMounted.value) return;
                         final param = {"product_variant_id": product.product_variant_id ?? ''};
                         context.read<CommonCubit>().addProductToCart(param);
                       },
                     ),
-                  if (recommendedProduct.length > 0)
-                    const SizedBox(
-                      height: 20,
-                    ),
+                  if (recommendedProduct.isNotEmpty)
+                    const SizedBox(height: 20),
                   if (offers.isNotEmpty)
-                    ExcitingOffersWidget(
-                      offers: offers,
-                    ),
-                  const SizedBox(
-                    height: 20,
-                  ),
+                    const ExcitingOffersWidget(),
+                  const SizedBox(height: 20),
                   if (shops.isNotEmpty)
                     ShopsWidget(
                       shops: shops,
                     ),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  if (popularProduct.length > 0)
+                  const SizedBox(height: 20),
+                  if (_advertismentData.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      height: 147,
+                      width: MediaQuery.of(context).size.width * 0.8,
+                      child: WebViewWidget(
+                        controller: _controller,
+                      ),
+                    ),
+                  if (_advertismentData.isNotEmpty)
+                    const SizedBox(height: 20),
+                  if (popularProduct.isNotEmpty)
                     PopularItemWidget(
                       products: popularProduct,
                       onTapLikeIcon: (ProductData product) {
+                        if (!_isMounted.value) return;
                         final param = {"product_id": product.id};
                         setState(() {
                           product.isInWishlist = true;
@@ -488,21 +543,16 @@ class _HomePageState extends State<HomePage> {
                         context.read<CommonCubit>().addProductToWishList(param);
                       },
                       onTapCartIcon: (ProductData product) {
+                        if (!_isMounted.value) return;
                         final param = {"product_variant_id": product.product_variant_id ?? ''};
                         context.read<CommonCubit>().addProductToCart(param);
                       },
                     ),
-                  if (popularProduct.length > 0)
-                    const SizedBox(
-                      height: 20,
-                    ),
-                  if (_testimonials.length > 0)
-                    CustomerReviewWidget(
-                      testimonials: _testimonials,
-                    ),
-                  const SizedBox(
-                    height: 20,
-                  ),
+                  if (popularProduct.isNotEmpty)
+                    const SizedBox(height: 20),
+                  if (_testimonials.isNotEmpty)
+                    const CustomerReviewWidget(),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),

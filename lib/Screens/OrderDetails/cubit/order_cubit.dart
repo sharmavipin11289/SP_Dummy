@@ -14,17 +14,18 @@ import '../../../SharedPrefrence/shared_prefrence.dart';
 class OrderCubit extends Cubit<OrderState> {
   OrderCubit() : super(OrdersInitial());
 
-  final _orders = 'orders/';
+  final _orders = 'orders';
+  final _orders_ = 'orders/';
   final _placeOrderEndPoint = 'checkout/order';
 
 
   //getCurrencies
-  Future<void> getOrders() async {
+  Future<void> getOrders({int page = 1}) async {
     emit(Ordersloading()); // Emit loading state
     try {
-      final response = await ApiService().request(endpoint: _orders, method: 'get', fromJson: (json) => OrdersModel.fromJson(json));
+      final response = await ApiService().request(endpoint: _orders + '?page=$page', method: 'get', fromJson: (json) => OrdersModel.fromJson(json));
       print(response.message);
-      emit(OrdersSuccess(response.data ?? []));
+      emit(OrdersSuccess(response.data ?? [],response.meta));
     } catch (e) {
       emit(OrdersFailed(error: '$e'));
     }
@@ -34,7 +35,7 @@ class OrderCubit extends Cubit<OrderState> {
   Future<void> getOrderDetails(String orderId) async {
     emit(Ordersloading()); // Emit loading state
     try {
-      final response = await ApiService().request(endpoint: _orders + orderId, method: 'get', fromJson: (json) => OrderDetailModel.fromJson(json));
+      final response = await ApiService().request(endpoint: _orders_ + orderId, method: 'get', fromJson: (json) => OrderDetailModel.fromJson(json));
       print(response.message);
       emit(OrderDetailSuccess(response.data));
     } catch (e) {

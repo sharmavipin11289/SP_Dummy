@@ -5,6 +5,7 @@ import 'package:sanaa/Navigation/navigation_service.dart';
 import 'package:sanaa/Provider/locale_provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:sanaa/Screens/Account/Model/currency_model.dart';
+import 'package:sanaa/Screens/Account/Model/language_model.dart';
 import 'package:sanaa/Screens/Account/cubit/account_cubit.dart';
 import 'package:sanaa/Screens/Account/cubit/account_state.dart';
 import 'package:sanaa/SharedPrefrence/shared_prefrence.dart';
@@ -20,9 +21,30 @@ class SettingPage extends StatefulWidget {
 }
 
 class _SettingPageState extends State<SettingPage> {
-  String selectedLanguage = 'English';
+  LanguageData? selectedLanguage;
   String selectedCurrency = SharedPreferencesHelper.getString('savedCurrency') ?? '';
   bool _showCurrencyLoader = false;
+  bool _showLanguageLoader = false;
+  late AccountCubit _cubit;
+  List<LanguageData> _languages = [];
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _setLanguage();
+    _cubit = BlocProvider.of<AccountCubit>(context);
+  }
+
+  _setLanguage() {
+    final savedLanguage = SharedPreferencesHelper.getCustomObject<LanguageData>(
+      'language',
+      (json) => LanguageData.fromJson(json),
+    );
+    setState(() {
+      selectedLanguage = savedLanguage ?? LanguageData(name: 'English', locale: 'en');
+    });
+  }
 
   // Default selected language
   void _showLanguageBottomSheet(BuildContext context) {
@@ -39,60 +61,29 @@ class _SettingPageState extends State<SettingPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                AppLocalizations
-                    .of(context)
-                    ?.chooseLanguage ?? 'Choose Language',
+                AppLocalizations.of(context)?.chooseLanguage ?? 'Choose Language',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const Divider(),
-              RadioListTile<String>(
-                title: const Text('English'),
-                value: 'English',
-                groupValue: selectedLanguage,
-                onChanged: (value) {
-                  setState(() {
-                    selectedLanguage = value!;
-                  });
-                  provider.setLocale(Locale('en'));
-                  Navigator.pop(context); // Close BottomSheet
-                },
-              ),
-              RadioListTile<String>(
-                title: const Text('Swahili'),
-                value: 'Swahili',
-                groupValue: selectedLanguage,
-                onChanged: (value) {
-                  setState(() {
-                    selectedLanguage = value!;
-                  });
-                  provider.setLocale(Locale('sw'));
-                  Navigator.pop(context); // Close BottomSheet
-                },
-              ),
-              RadioListTile<String>(
-                title: const Text('Spanish'),
-                value: 'Spanish',
-                groupValue: selectedLanguage,
-                onChanged: (value) {
-                  setState(() {
-                    selectedLanguage = value!;
-                  });
-                  provider.setLocale(Locale('es'));
-                  Navigator.pop(context); // Close BottomSheet
-                },
-              ),
-              RadioListTile<String>(
-                title: const Text('French'),
-                value: 'French',
-                groupValue: selectedLanguage,
-                onChanged: (value) {
-                  setState(() {
-                    selectedLanguage = value!;
-                  });
-                  provider.setLocale(Locale('fr'));
-                  Navigator.pop(context); // Close BottomSheet
-                },
-              ),
+              for (var language in _languages)
+                RadioListTile<LanguageData>(
+                  title: Text(language.name ?? ''),
+                  value: language,
+                  groupValue: _languages.firstWhere(
+                    (lang) => lang.locale == selectedLanguage?.locale,
+                    orElse: () => selectedLanguage ?? LanguageData(name: 'English', locale: 'en'),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedLanguage = value!;
+                      print("Selected::::::::::: ${selectedLanguage?.name} ${selectedLanguage?.locale}");
+                      provider.setLocale(Locale(selectedLanguage?.locale ?? 'en'));
+                      SharedPreferencesHelper.saveCustomObject('language', language);
+                    });
+
+                    Navigator.pop(context); // Close BottomSheet
+                  },
+                ),
             ],
           ),
         );
@@ -113,9 +104,7 @@ class _SettingPageState extends State<SettingPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                AppLocalizations
-                    .of(context)
-                    ?.selectCurrency ?? 'Choose Currency',
+                AppLocalizations.of(context)?.selectCurrency ?? 'Choose Currency',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const Divider(),
@@ -146,15 +135,15 @@ class _SettingPageState extends State<SettingPage> {
         backgroundColor: Colors.white,
         leading: Padding(
           padding: const EdgeInsets.all(8.0),
-          child: GestureDetector( onTap: () {
-            print("back>>>");
-            NavigationService.goBack();
-          },child: Image.asset(back)),
+          child: GestureDetector(
+              onTap: () {
+                print("back>>>");
+                NavigationService.goBack();
+              },
+              child: Image.asset(back)),
         ),
         title: Text(
-          AppLocalizations
-              .of(context)
-              ?.settings ?? 'Settings',
+          AppLocalizations.of(context)?.settings ?? 'Settings',
           style: FontStyles.getStyle(
             fontSize: 20,
             fontWeight: FontWeight.w700,
@@ -171,29 +160,36 @@ class _SettingPageState extends State<SettingPage> {
               children: [
                 InkWell(
                   onTap: () {
-                    _showLanguageBottomSheet(context);
+                    if (_languages.isEmpty) {
+                      _cubit.getLanguage();
+                    } else {
+                      _showLanguageBottomSheet(context);
+                    }
                   },
                   child: Container(
                     height: 40,
                     child: Row(
                       children: [
                         Text(
-                          AppLocalizations
-                              .of(context)
-                              ?.language ?? '',
+                          AppLocalizations.of(context)?.language ?? '',
                           style: FontStyles.getStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                         Spacer(),
-                          Text(
-                            selectedLanguage,
-                            style: FontStyles.getStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.grey.shade500
+                        if (_showLanguageLoader)
+                          SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.grey,
                             ),
+                          ),
+                        if (!_showLanguageLoader)
+                          Text(
+                            selectedLanguage?.name ?? 'English',
+                            style: FontStyles.getStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey.shade500),
                           ),
                         Icon(
                           Icons.arrow_forward_ios_rounded,
@@ -213,9 +209,7 @@ class _SettingPageState extends State<SettingPage> {
                     child: Row(
                       children: [
                         Text(
-                          AppLocalizations
-                              .of(context)
-                              ?.currency ?? 'Currency',
+                          AppLocalizations.of(context)?.currency ?? 'Currency',
                           style: FontStyles.getStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -230,14 +224,10 @@ class _SettingPageState extends State<SettingPage> {
                               color: Colors.grey,
                             ),
                           ),
-                        if(!_showCurrencyLoader)
+                        if (!_showCurrencyLoader)
                           Text(
                             selectedCurrency,
-                            style: FontStyles.getStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.grey.shade500
-                            ),
+                            style: FontStyles.getStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey.shade500),
                           ),
                         Icon(
                           Icons.arrow_forward_ios_rounded,
@@ -248,47 +238,53 @@ class _SettingPageState extends State<SettingPage> {
                   ),
                 ),
                 Divider(),
-                Container(
-                  height: 40,
-                  child: Row(
-                    children: [
-                      Text(
-                        AppLocalizations
-                            .of(context)
-                            ?.changePassword ?? 'Change Password',
-                        style: FontStyles.getStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                InkWell(
+                  onTap: () {
+                    NavigationService.navigateTo('/forgotPage');
+                  },
+                  child: Container(
+                    height: 40,
+                    child: Row(
+                      children: [
+                        Text(
+                          AppLocalizations.of(context)?.changePassword ?? 'Change Password',
+                          style: FontStyles.getStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      Spacer(),
-                      Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        size: 24,
-                      )
-                    ],
+                        Spacer(),
+                        Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 24,
+                        )
+                      ],
+                    ),
                   ),
                 ),
                 Divider(),
-                Container(
-                  height: 40,
-                  child: Row(
-                    children: [
-                      Text(
-                        AppLocalizations
-                            .of(context)
-                            ?.privacyPolicy ?? 'Privacy Policy',
-                        style: FontStyles.getStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                InkWell(
+                  onTap: () {
+                    NavigationService.navigateTo('/webViewScreen', arguments: 'https://website-sanaa.arshantanu.in/privacy-policy');
+                  },
+                  child: Container(
+                    height: 40,
+                    child: Row(
+                      children: [
+                        Text(
+                          AppLocalizations.of(context)?.privacyPolicy ?? 'Privacy Policy',
+                          style: FontStyles.getStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      Spacer(),
-                      Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        size: 24,
-                      )
-                    ],
+                        Spacer(),
+                        Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 24,
+                        )
+                      ],
+                    ),
                   ),
                 ),
                 Divider(),
@@ -296,18 +292,24 @@ class _SettingPageState extends State<SettingPage> {
             ),
           ),
         );
-      },
-          listener: (context, state) {
-            if (state is CurrencyGetSuccess) {
-              _showCurrencyLoader = false;
-              _showCurrencyBottomSheet(context, state.currencies);
-            } else if (state is CurrencyGetFailed) {
-              _showCurrencyLoader = false;
-            } else if (state is CurrencyLoading) {
-              _showCurrencyLoader = true;
-            }
-          }),
+      }, listener: (context, state) {
+        if (state is CurrencyGetSuccess) {
+          _showCurrencyLoader = false;
+          _showCurrencyBottomSheet(context, state.currencies);
+        } else if (state is CurrencyGetFailed) {
+          _showCurrencyLoader = false;
+        } else if (state is CurrencyLoading) {
+          _showCurrencyLoader = true;
+        } else if (state is LanguageGetSuccess) {
+          _showLanguageLoader = false;
+          _languages = state.languages;
+          _showLanguageBottomSheet(context);
+        } else if (state is LanguageGetFailed) {
+          _showLanguageLoader = false;
+        } else if (state is LanguageLoading) {
+          _showLanguageLoader = true;
+        }
+      }),
     );
   }
 }
-

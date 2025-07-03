@@ -2,7 +2,8 @@ class CommonResponse {
   String? message;
   dynamic data; // Can be null, an object, or a list
   String? token;
-  CommonResponse({this.message, this.data, this.token});
+  List<dynamic>? extra;
+  CommonResponse({this.message, this.data, this.token, this.extra});
 
   // Factory constructor to handle deserialization
   factory CommonResponse.fromJson(Map<String, dynamic> json) {
@@ -10,6 +11,7 @@ class CommonResponse {
       message: json['message'],
       data: json.containsKey('data') ? json['data'] : null,
       token: json.containsKey('token') ? json['token'] : null,
+      extra: json.containsKey('extra') ? json['extra'] : null
     );
   }
 
@@ -24,6 +26,9 @@ class CommonResponse {
     }
     if (token != null) {
       result['token'] = token;
+    }
+    if (extra != null) {
+      result['extra'] = extra;
     }
     return result;
   }

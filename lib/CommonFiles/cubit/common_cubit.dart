@@ -35,7 +35,7 @@ class CommonCubit extends Cubit<CommonState> {
     try {
       final response = await ApiService().request(endpoint: _moveProductInCart, body: param,method: 'post', fromJson: (json) => CommonResponse.fromJson(json));
       print(response.message);
-      showToast('Product added to cart.');
+      showToast( response.message ?? '');
       emit(CommonSuccess());
     } catch (e) {
       showToast(e.toString());

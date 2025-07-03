@@ -35,7 +35,10 @@ class _BannerWidgetState extends State<BannerWidget> {
 
 
   void _autoScroll(Timer timer) {
-    print("inside auto scroll");
+    if(!mounted){
+      _timer.cancel();
+      return;
+    }
     if (_currentPage < widget.banners.length - 1) {
       _currentPage++;
     } else {
@@ -85,6 +88,7 @@ class _BannerWidgetState extends State<BannerWidget> {
   @override
   void dispose() {
     _timer.cancel();
+    _pageController.dispose();
     super.dispose();
   }
 }

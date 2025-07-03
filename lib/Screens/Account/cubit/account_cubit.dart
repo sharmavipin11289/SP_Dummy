@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sanaa/ApiServices/api_service.dart';
 import 'package:sanaa/CommonFiles/common_api_response.dart';
 import 'package:sanaa/Screens/Account/Model/currency_model.dart';
+import 'package:sanaa/Screens/Account/Model/language_model.dart';
 import 'package:sanaa/Screens/Account/Model/user_detail_model.dart';
 import '../../../SharedPrefrence/shared_prefrence.dart';
 import 'account_state.dart';
@@ -12,6 +13,7 @@ class AccountCubit extends Cubit<AccountState> {
 
   final _currenciesEndPoint = 'currencies';
   final _userDetail = 'profile';
+  final _languages = 'languages';
 
   //getCurrencies
   Future<void> getCurrencies() async {
@@ -51,6 +53,17 @@ class AccountCubit extends Cubit<AccountState> {
       'user_detail',
           (json) => UserDetail.fromJson(json),
     );
+  }
+
+  Future<void> getLanguage() async {
+    emit(LanguageLoading()); // Emit loading state
+    try {
+      final response = await ApiService().request(endpoint: _languages, method: 'get', fromJson: (json) => LanguageModel.fromJson(json));
+      print(response.message);
+      emit(LanguageGetSuccess(languages: response.data ?? []));
+    } catch (e) {
+      emit(LanguageGetFailed(error: '$e'));
+    }
   }
 
 }

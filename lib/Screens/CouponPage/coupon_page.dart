@@ -4,17 +4,17 @@ import 'package:sanaa/Navigation/navigation_service.dart';
 import 'package:sanaa/Screens/MyCartPage/Model/coupon_model.dart';
 import '../../CommonFiles/text_style.dart';
 
-
 class CouponPage extends StatefulWidget {
   Map<String, dynamic> args;
+
   CouponPage(this.args, {super.key});
+
   @override
   State<CouponPage> createState() => _CouponPageState();
 }
 
 class _CouponPageState extends State<CouponPage> {
-
-  List<CouponData> coupons =  [];
+  List<CouponData> coupons = [];
   String selectedCoupon = '';
 
   @override
@@ -109,16 +109,16 @@ class CouponCard extends StatelessWidget {
                       Text(
                         title,
                         style: FontStyles.getStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       SizedBox(height: 4),
                       Text(
-                        'Offer Till: $offer',
+                        '${AppLocalizations.of(context)?.offerTill ?? 'Offer Till'} $offer',
                         style: FontStyles.getStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w400,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
                     ],
@@ -127,29 +127,39 @@ class CouponCard extends StatelessWidget {
               ],
             ),
             Divider(),
-            Row(children: [
-              Text(
-                code,
-                style: FontStyles.getStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              Spacer(),
-              GestureDetector(
-                onTap: (){
-                  NavigationService.goBack(result: code);
-                },
-                child: Text(
-                  ((code.toLowerCase() != selectedCoupon.toLowerCase()) ? AppLocalizations.of(context)?.apply : AppLocalizations.of(context)?.applied) ?? "Apply",
+            Row(
+              children: [
+                Text(
+                  code,
                   style: FontStyles.getStyle(
-                    fontSize: 14,
+                    fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: Colors.green
                   ),
                 ),
-              )
-            ],),
+                Spacer(),
+                GestureDetector(
+                    onTap: () {
+                      NavigationService.goBack(result: code);
+                    },
+                    child: Row(
+                      children: [
+                        Text(
+                          ((code.toLowerCase() != selectedCoupon.toLowerCase()) ? AppLocalizations.of(context)?.apply ?? 'Apply' : AppLocalizations.of(context)?.applied ?? 'Applied'),
+                          style: FontStyles.getStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.green),
+                        ),
+                        InkWell(
+                          onTap: (){
+                            NavigationService.goBack(result: 'remove');
+                          },
+                          child: Text(
+                            (code.toLowerCase() != selectedCoupon.toLowerCase()) ? '' : '(${AppLocalizations.of(context)?.remove})',
+                            style: FontStyles.getStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.red),
+                          ),
+                        ),
+                      ],
+                    ))
+              ],
+            ),
           ],
         ),
       ),

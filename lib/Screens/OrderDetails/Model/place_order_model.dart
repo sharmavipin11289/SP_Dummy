@@ -22,37 +22,40 @@ class PlaceOrderModel {
 }
 
 class PlaceOrderData {
-  String? orderId;
+  /*String? orderId;
   String? orderNumber;
   String? totalAmount;
   String? currency;
   String? transactionId;
   CheckoutSummaryData? checkoutSummaryData;
-  String? paymentMethod;
+  String? paymentMethod;*/
+  String? payment_url;
 
 
   PlaceOrderData(
-      {this.orderId,
-        this.orderNumber,
+      {this.payment_url,
+      /*  this.orderNumber,
         this.totalAmount,
         this.currency,
-        this.transactionId});
+        this.transactionId*/});
 
   PlaceOrderData.fromJson(Map<String, dynamic> json) {
-    orderId = json['order_id'];
+   /* orderId = json['order_id'];
     orderNumber = json['order_number'];
     totalAmount = json['total_amount'];
     currency = json['currency'];
-    transactionId = json['transaction_id'];
+    transactionId = json['transaction_id'];*/
+    payment_url = json['payment_url'];
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['order_id'] = this.orderId;
+   /* data['order_id'] = this.orderId;
     data['order_number'] = this.orderNumber;
     data['total_amount'] = this.totalAmount;
     data['currency'] = this.currency;
-    data['transaction_id'] = this.transactionId;
+    data['transaction_id'] = this.transactionId;*/
+    data['payment_url'] = this.payment_url;
     return data;
   }
 }

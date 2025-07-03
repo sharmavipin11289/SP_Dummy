@@ -39,8 +39,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
     super.initState();
     _cubit = BlocProvider.of<PaymentPageCubit>(context);
     selectedCurrency = SharedPreferencesHelper.getString('savedCurrency') ?? 'KES';
-    _selectedPaymentMethod = paymentData?.paymentMethods?.first;
-    _selectedShippingMethod = paymentData?.shippingMethods?.first;
+    //_selectedPaymentMethod = paymentData?.paymentMethods?.first;
+    //_selectedShippingMethod = paymentData?.shippingMethods?.first;
+    _getSummary();
+  }
+
+  _getSummary() async {
+    final param = {
+      "currency": selectedCurrency,
+      if(widget.coupon.isNotEmpty) "coupon": '${widget.coupon}',
+    };
+
+     _cubit.getOrderSummary(param);
   }
 
   @override
@@ -75,7 +85,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 Expanded(
                   child: ListView(
                     children: [
-                      Padding(
+                   /*   Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: Text(
                           "Payment Methods",
@@ -180,7 +190,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                 ),
                               ),
                           ],
-                        ),
+                        ),*/
                       Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: Text(
@@ -238,7 +248,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     height: 50,
                     child: ElevatedButton(
                       onPressed: () {
-                        if((_selectedPaymentMethod?.requiresPhoneNumber?.toLowerCase() == 'yes') && _phoneTxtCtrl.text.isEmpty) {
+                      /*  if((_selectedPaymentMethod?.requiresPhoneNumber?.toLowerCase() == 'yes') && _phoneTxtCtrl.text.isEmpty) {
                           showToast("Phone number is required");
                         }else{
                           print("Code:: ${widget.coupon}");
@@ -249,7 +259,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           };
 
                           _cubit.getOrderSummary(param);
-                        }
+                        //}*/
                       },
                       child: Text(
                         "Continue",
@@ -280,9 +290,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
           final args = {
             'summaryData' : summaryData,
-            'paymentMethod': _selectedPaymentMethod?.option ?? '',
-            'shippingMethod': _selectedShippingMethod?.name ?? '',
-            'phone': (_selectedPaymentMethod?.requiresPhoneNumber?.toLowerCase() == 'yes') ? _phoneTxtCtrl.text : ''
+            /*'paymentMethod': _selectedPaymentMethod?.option ?? '',*/
+            'shippingMethod': 'EXPRESS_SHIPPING',
+            /*'phone': (_selectedPaymentMethod?.requiresPhoneNumber?.toLowerCase() == 'yes') ? _phoneTxtCtrl.text : ''*/
           };
           print(">>>>>>>>>>");
           print(args);
